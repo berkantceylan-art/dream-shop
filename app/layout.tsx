@@ -1,8 +1,3 @@
-export const metadata = {
-  title: 'Dream Shop',
-  description: 'Dream Shop E-Ticaret Vitrini',
-};
-
 export default function RootLayout({
   children,
 }: {
@@ -10,9 +5,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="tr">
-      <body style={{ margin: 0, padding: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-        {children}
-      </body>
+      <body style={{ margin: 0, padding: 0, background: '#ffffff' }}>{children}</body>
     </html>
   );
 }
