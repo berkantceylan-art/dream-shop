@@ -1,3 +1,3 @@
-export default function Page() {
-  return null;
+export default function BlankPage() {
+  return <div style={{ background: "#ffffff", minHeight: "100vh" }} />;
 }
