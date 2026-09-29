@@ -4,6 +4,7 @@ import Crystal from "./Crystal";
 import Credits from "./Credits";
 
 const NAV = [
+  { href: "/profil", label: "Profil", icon: "👤" },
   { href: "/sehir", label: "Şehir", icon: "🏙️" },
   { href: "/envanter", label: "Eşyalarım", icon: "🎒" },
   { href: "/karakter", label: "Karakter", icon: "🧍" },
@@ -17,7 +18,7 @@ export default function AppHeader({ me }: { me: Me }) {
   return (
     <header className="sticky top-0 z-30 border-b-2 border-white/80 bg-white/70 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
-        <Link href="/hesap" className="flex items-center gap-2 font-display text-lg font-bold">
+        <Link href="/profil" className="flex items-center gap-2 font-display text-lg font-bold">
           <Crystal size={22} /> <span className="hidden sm:inline">Dream Shop</span>
         </Link>
         <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
@@ -28,7 +29,8 @@ export default function AppHeader({ me }: { me: Me }) {
             </Link>
           ))}
         </nav>
-        <span className="shrink-0 rounded-full bg-white px-3 py-1 shadow"><Credits amount={me.balance} /></span>
+        <Link href="/profil?tab=cuzdan" className="shrink-0 rounded-full bg-white px-3 py-1 shadow"><Credits amount={me.balance} /></Link>
+        <Link href="/profil?tab=destek" title="Hata bildir / destek" className="shrink-0 text-lg">🛟</Link>
         <form action="/auth/cikis" method="post">
           <button className="shrink-0 text-xs font-bold text-ink/50 hover:underline">Çıkış</button>
         </form>

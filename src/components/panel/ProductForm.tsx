@@ -8,13 +8,16 @@ import type { Product } from "@/lib/catalog";
 type Cat = { id: number; name: string; parent_id: number | null };
 
 export type StoreOption = { id: string; label: string; group: string };
+export type ChainOption = { id: string; label: string };
 
-export default function ProductForm({ storeId, categories, userId, onDone, initial, stores }: {
+export default function ProductForm({ storeId, categories, userId, onDone, initial, stores, chains }: {
   storeId: string | null; categories: Cat[]; userId: string; onDone?: () => void; initial?: Product;
   /** Verilirse (admin) ürünün satılacağı yer seçilebilir. */
   stores?: StoreOption[];
+  chains?: ChainOption[];
 }) {
-  const [place, setPlace] = useState<string>(initial ? initial.store_id ?? "" : storeId ?? "");
+  const [place, setPlace] = useState<string>(
+    initial?.chain_id ? `c:${initial.chain_id}` : initial?.store_id ? `s:${initial.store_id}` : storeId ? `s:${storeId}` : "");
   const av = (initial?.attributes?.avatar ?? {}) as { style?: string; color?: string };
   const [f, setF] = useState({
     name: initial?.name ?? "", brand: initial?.brand ?? "", description: initial?.description ?? "",
@@ -46,10 +49,13 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
 
   function submit(e: React.FormEvent) {
     e.preventDefault(); setMsg({});
+    if (wearable && !f.avatar_color) return setMsg({ err: "Giyilebilir ürünlerde karakterdeki rengi seçmelisin." });
+    if ((top || bottom) && !f.avatar_style) return setMsg({ err: "Karakterde görünecek modeli seç (ör. Tişört, Kot pantolon)." });
     start(async () => {
       const r = await saveProduct({
         id: initial?.id,
-        store_id: stores ? (place || null) : initial ? initial.store_id : storeId, category_id: f.category_id, name: f.name, brand: f.brand, description: f.description,
+        store_id: stores ? (place.startsWith("s:") ? place.slice(2) : null) : initial ? initial.store_id : storeId,
+        chain_id: stores ? (place.startsWith("c:") ? place.slice(2) : null) : initial?.chain_id ?? null, category_id: f.category_id, name: f.name, brand: f.brand, description: f.description,
         credit_price: Number(f.credit_price), real_price_try: f.real_price_try ? Number(f.real_price_try) : null,
         thumbnail_url: img, avatar_style: f.avatar_style || null, avatar_color: f.avatar_color || null,
       });
@@ -75,9 +81,14 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
             <p className="mb-1 text-sm font-bold">📍 Nerede satılsın?</p>
             <select className="game-input" value={place} onChange={(e) => setPlace(e.target.value)}>
               <option value="">🛍️ Dream Outlet — tüm şehirlerde</option>
+              {!!chains?.length && (
+                <optgroup label="Zincirler — 81 ildeki tüm şubelerde">
+                  {chains.map((c) => <option key={c.id} value={`c:${c.id}`}>{c.label}</option>)}
+                </optgroup>
+              )}
               {Array.from(new Set(stores.map((s) => s.group))).map((g) => (
-                <optgroup key={g} label={g}>
-                  {stores.filter((s) => s.group === g).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                <optgroup key={g} label={`${g} — tek mağaza`}>
+                  {stores.filter((s) => s.group === g).map((s) => <option key={s.id} value={`s:${s.id}`}>{s.label}</option>)}
                 </optgroup>
               ))}
             </select>
@@ -105,7 +116,7 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
 
         {wearable && (
           <div className="rounded-2xl bg-crystal/5 p-3">
-            <p className="mb-2 text-sm font-bold">🧍 Karakterde nasıl görünsün?</p>
+            <p className="mb-2 text-sm font-bold">🧍 Karakterde nasıl görünsün? *</p>
             {(top || bottom) && (
               <div className="mb-2 flex flex-wrap gap-2">
                 {Object.entries(top ? TOP_LABELS : BOTTOM_LABELS).map(([k, l]) => (

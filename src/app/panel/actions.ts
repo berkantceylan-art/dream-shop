@@ -19,6 +19,8 @@ export async function applyStore(_: ApplyState, form: FormData): Promise<ApplySt
 
   const { error } = await supabase.from("stores").insert({
     owner_id: user.id, name, city_id: cityId, mall_id: mallId,
+    place_type: String(form.get("place_type") || "") || null,
+    district: String(form.get("district") || "") || null,
     slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
     tax_no: String(form.get("tax_no") || "").trim() || null,
     status: "pending",

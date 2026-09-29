@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { normalizeAvatar } from "@/lib/avatar";
+import { normalizeAvatar, CLOTH_COLORS } from "@/lib/avatar";
 
 type AvatarAttr = { style?: string; color?: string };
 
@@ -15,9 +15,16 @@ export async function equip(itemId: string, on: boolean): Promise<{ error?: stri
 
   // Giyilen ürünü 3D karaktere yansıt
   if (on) {
-    const { data: item } = await supabase.from("inventory_items").select("products(wear_slot)").eq("id", itemId).single();
-    const slot = (item?.products as unknown as { wear_slot: string } | null)?.wear_slot;
-    const a = ((attrs as Record<string, unknown> | null)?.avatar ?? {}) as AvatarAttr;
+    const { data: item } = await supabase.from("inventory_items").select("products(id, wear_slot)").eq("id", itemId).single();
+    const prod = item?.products as unknown as { id: string; wear_slot: string } | null;
+    const slot = prod?.wear_slot;
+    const a = { ...(((attrs as Record<string, unknown> | null)?.avatar ?? {}) as AvatarAttr) };
+    // Ürüne karakter görünümü tanımlanmamışsa: yuvaya göre varsayılan model + ürüne özgü sabit renk
+    if (!a.color) {
+      const h = [...(prod?.id ?? "x")].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7);
+      a.color = CLOTH_COLORS[h % CLOTH_COLORS.length];
+    }
+    if (!a.style) a.style = slot === "outerwear" ? "kapusonlu" : slot === "top" ? "tisort" : slot === "bottom" ? "kot" : undefined;
     const { data: av } = await supabase.from("avatars").select("config").eq("user_id", user.id).maybeSingle();
     const cfg = normalizeAvatar(av?.config);
     if (slot === "top" || slot === "outerwear") cfg.top = { style: (a.style as never) ?? cfg.top.style, color: a.color ?? cfg.top.color };

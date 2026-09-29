@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export type ProductInput = {
   id?: string;
   store_id: string | null;
+  chain_id?: string | null;
   category_id: number;
   name: string; brand: string; description: string;
   credit_price: number; real_price_try: number | null;
@@ -13,6 +14,9 @@ export type ProductInput = {
 };
 
 const CAT: Record<number, { kind: string; slot: string | null }> = {
+  12: { kind: "other", slot: null }, 13: { kind: "other", slot: null }, 14: { kind: "other", slot: null },
+  15: { kind: "other", slot: null }, 16: { kind: "other", slot: null }, 17: { kind: "accessory", slot: "accessory" },
+  18: { kind: "other", slot: null }, 19: { kind: "other", slot: null },
   1: { kind: "clothing", slot: "top" }, 2: { kind: "clothing", slot: "top" }, 3: { kind: "clothing", slot: "bottom" },
   4: { kind: "clothing", slot: "shoes" }, 5: { kind: "clothing", slot: "outerwear" }, 6: { kind: "accessory", slot: "accessory" },
   7: { kind: "car", slot: null }, 8: { kind: "house", slot: null }, 9: { kind: "furniture", slot: null },
@@ -31,6 +35,7 @@ export async function saveProduct(input: ProductInput): Promise<{ error?: string
 
   const row = {
     store_id: input.store_id,
+    chain_id: input.chain_id ?? null,
     category_id: input.category_id,
     kind: c.kind,
     wear_slot: c.slot,

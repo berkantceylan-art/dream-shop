@@ -9,7 +9,7 @@ export default async function AvmPage({ params }: { params: Promise<{ id: string
   const { supabase, me } = await requireMe(`/avm/${id}`);
   const { data: mall } = await supabase.from("malls").select("id, name, district, cities(name)").eq("id", id).maybeSingle();
   if (!mall) notFound();
-  const { data: stores } = await supabase.from("stores").select("id, name, slug, logo_url")
+  const { data: stores } = await supabase.from("stores").select("id, name, slug, logo_url, place_type, district")
     .eq("mall_id", id).eq("status", "approved").order("name");
   const city = (mall.cities as unknown as { name: string } | null)?.name;
 

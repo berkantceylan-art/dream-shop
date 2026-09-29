@@ -4,14 +4,14 @@ import type { Product } from "@/lib/catalog";
 import { KIND_META } from "@/lib/catalog";
 import { ProductThumb } from "@/components/ProductCard";
 import Credits from "@/components/Credits";
-import ProductForm, { type StoreOption } from "./ProductForm";
+import ProductForm, { type StoreOption, type ChainOption } from "./ProductForm";
 import { deleteProduct, setProductStatus } from "./productActions";
 
 type Cat = { id: number; name: string; parent_id: number | null };
 
-export default function ProductTable({ products, sales = {}, categories, userId, stores }: {
+export default function ProductTable({ products, sales = {}, categories, userId, stores, chains }: {
   products: (Product & { store_name?: string })[]; sales?: Record<string, number>; categories: Cat[]; userId: string;
-  stores?: StoreOption[];
+  stores?: StoreOption[]; chains?: ChainOption[];
 }) {
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function ProductTable({ products, sales = {}, categories, userId,
             </div>
             {editing === p.id && (
               <div className="mt-3 rounded-2xl bg-[#f7f9fd] p-4">
-                <ProductForm initial={p} storeId={p.store_id} categories={categories} userId={userId} stores={stores} onDone={() => setEditing(null)} />
+                <ProductForm initial={p} storeId={p.store_id} categories={categories} userId={userId} stores={stores} chains={chains} onDone={() => setEditing(null)} />
               </div>
             )}
           </div>

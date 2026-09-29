@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireMe } from "@/lib/session";
 import { OUTLET_SLUG, PRODUCT_COLS, type Product } from "@/lib/catalog";
 import AppHeader from "@/components/AppHeader";
+import { placeMeta } from "@/lib/places";
 import Shop from "./Shop";
 
 export default async function MagazaPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -12,17 +13,19 @@ export default async function MagazaPage({ params }: { params: Promise<{ slug: s
   let title = "Dream Outlet", subtitle = "Resmi mağaza · Her şehirde", back = { href: "/sehir", label: "Şehir" };
   let q = supabase.from("products").select(PRODUCT_COLS).eq("status", "active");
   if (slug === OUTLET_SLUG) {
-    q = q.is("store_id", null);
+    q = q.is("store_id", null).is("chain_id", null);
   } else {
     const { data: store } = await supabase.from("stores")
-      .select("id, name, mall_id, malls(name), cities(name)").eq("slug", slug).eq("status", "approved").maybeSingle();
+      .select("id, name, mall_id, chain_id, district, place_type, city_id, malls(name), cities(name)").eq("slug", slug).eq("status", "approved").maybeSingle();
     if (!store) notFound();
     const mall = store.malls as unknown as { name: string } | null;
     const city = (store.cities as unknown as { name: string } | null)?.name;
-    title = store.name;
-    subtitle = mall ? `${mall.name} · ${city}` : `Cadde mağazası · ${city}`;
-    back = store.mall_id ? { href: `/avm/${store.mall_id}`, label: mall?.name ?? "AVM" } : back;
-    q = q.eq("store_id", store.id);
+    const pt = placeMeta(store.place_type);
+    title = `${pt?.icon ?? ""} ${store.name}`.trim();
+    subtitle = mall ? `${mall.name} · ${city}` : `${pt?.name ?? "Mağaza"} · ${store.district ?? "Merkez"}, ${city}`;
+    back = store.mall_id ? { href: `/avm/${store.mall_id}`, label: mall?.name ?? "AVM" }
+      : { href: `/sehir?il=${store.city_id}${store.place_type ? `&tur=${store.place_type}` : ""}`, label: city ?? "Şehir" };
+    q = store.chain_id ? q.or(`store_id.eq.${store.id},chain_id.eq.${store.chain_id}`) : q.eq("store_id", store.id);
   }
   const [{ data: products }, { data: wl }] = await Promise.all([
     q.order("created_at", { ascending: false }),

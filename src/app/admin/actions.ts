@@ -34,10 +34,22 @@ export async function adminCreateStore(_: StoreFormState, form: FormData): Promi
   const supabase = await createClient();
   const { error } = await supabase.from("stores").insert({
     name, city_id: cityId, mall_id: String(form.get("mall_id") || "") || null,
+    place_type: String(form.get("place_type") || "") || null,
+    district: String(form.get("district") || "") || null,
     slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
     status: "approved", owner_id: null,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin");
   return { ok: `“${name}” açıldı. Artık Ürünler sekmesinden bu mağazaya ürün ekleyebilirsin.` };
+}
+
+export async function replyTicket(form: FormData) {
+  const supabase = await createClient();
+  await supabase.from("support_tickets").update({
+    admin_reply: String(form.get("reply") || "").trim() || null,
+    status: String(form.get("status") || "answered"),
+    updated_at: new Date().toISOString(),
+  }).eq("id", String(form.get("id")));
+  revalidatePath("/admin");
 }

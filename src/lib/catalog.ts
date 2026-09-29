@@ -3,11 +3,11 @@ export type Product = {
   kind: "house" | "car" | "clothing" | "accessory" | "furniture" | "other";
   wear_slot: string | null; credit_price: number; real_price_try: number | null;
   thumbnail_url: string | null; attributes: Record<string, unknown>; store_id: string | null; status: string;
-  category_id: number;
+  category_id: number; chain_id: string | null;
 };
 
 export const PRODUCT_COLS =
-  "id, name, brand, description, kind, wear_slot, credit_price, real_price_try, thumbnail_url, attributes, store_id, status, category_id";
+  "id, name, brand, description, kind, wear_slot, credit_price, real_price_try, thumbnail_url, attributes, store_id, status, category_id, chain_id";
 
 export const KIND_META: Record<Product["kind"], { icon: string; label: string; bg: string }> = {
   clothing:  { icon: "👕", label: "Giyim",    bg: "#ffe3f1" },

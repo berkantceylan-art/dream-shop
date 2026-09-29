@@ -13,17 +13,18 @@ export default async function PanelPage() {
 
   let body: React.ReactNode;
   if (!store) {
-    const [{ data: cities }, { data: malls }] = await Promise.all([
+    const [{ data: cities }, { data: malls }, { data: districts }] = await Promise.all([
       supabase.from("cities").select("id, name"),
       supabase.from("malls").select("id, name, city_id").order("name"),
+      supabase.from("districts").select("city_id, name").order("name").limit(2000),
     ]);
     body = (
       <div className="game-panel mx-auto max-w-xl p-8">
-        <h1 className="font-display text-3xl font-bold">🏪 Mağazanı aç</h1>
+        <h1 className="font-display text-3xl font-bold">🏪 Dükkânını aç</h1>
         <p className="mb-6 mt-1 font-semibold text-ink/60">
           Ürünlerini Türkiye'nin her yerindeki oyunculara sergile. Hangi ürünlerinin ne kadar ilgi gördüğünü raporlarla takip et.
         </p>
-        <ApplyForm cities={(cities ?? []).sort((a, b) => a.name.localeCompare(b.name, "tr"))} malls={malls ?? []} defaultCity={me.city_id ?? 34} />
+        <ApplyForm cities={(cities ?? []).sort((a, b) => a.name.localeCompare(b.name, "tr"))} malls={malls ?? []} districts={districts ?? []} defaultCity={me.city_id ?? 34} />
       </div>
     );
   } else if (store.status !== "approved") {

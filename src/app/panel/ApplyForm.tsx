@@ -1,25 +1,21 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
+import PlaceFields from "@/components/PlaceFields";
 import { applyStore, type ApplyState } from "./actions";
 
 type City = { id: number; name: string };
 type Mall = { id: string; name: string; city_id: number };
+type District = { city_id: number; name: string };
 
-export default function ApplyForm({ cities, malls, defaultCity }: { cities: City[]; malls: Mall[]; defaultCity: number }) {
+export default function ApplyForm({ cities, malls, districts, defaultCity }: {
+  cities: City[]; malls: Mall[]; districts: District[]; defaultCity: number;
+}) {
   const [state, action, pending] = useActionState<ApplyState, FormData>(applyStore, {});
-  const [city, setCity] = useState(defaultCity);
-  const cityMalls = malls.filter((m) => m.city_id === city);
   return (
     <form action={action} className="flex flex-col gap-3">
-      <input name="name" className="game-input" placeholder="Mağaza adı *" required />
+      <input name="name" className="game-input" placeholder="Dükkân adı *" required />
       <div className="grid gap-3 sm:grid-cols-2">
-        <select name="city_id" className="game-input" value={city} onChange={(e) => setCity(Number(e.target.value))}>
-          {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select name="mall_id" className="game-input" defaultValue="">
-          <option value="">Cadde mağazası (AVM dışı)</option>
-          {cityMalls.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </select>
+        <PlaceFields cities={cities} malls={malls} districts={districts} defaultCity={defaultCity} />
       </div>
       <input name="tax_no" className="game-input" placeholder="Vergi numarası (gerçek işletmeler için)" />
       <label className="flex gap-2 text-sm font-semibold">
