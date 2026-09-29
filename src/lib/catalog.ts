@@ -22,3 +22,12 @@ export const KIND_META: Record<Product["kind"], { icon: string; label: string; b
 export const OUTLET_SLUG = "dream-outlet";
 
 export const STORE_CATEGORIES = ["Giyim", "Ayakkabı", "Aksesuar", "Otomobil", "Emlak", "Mobilya", "Elektronik", "Kozmetik", "Diğer"];
+
+export type MarketListing = {
+  id: string; price: number; note: string | null; created_at: string; seller_id: string; city_id: number | null;
+  seller_username: string; city_name: string | null; seller_paid: number;
+  product_id: string; name: string; brand: string | null; kind: Product["kind"]; wear_slot: string | null;
+  store_price: number; thumbnail_url: string | null; attributes: Record<string, unknown>; category_id: number;
+};
+
+export type MarketSettings = { fee_percent: number; quick_sell_pct: number };

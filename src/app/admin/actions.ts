@@ -53,3 +53,11 @@ export async function replyTicket(form: FormData) {
   }).eq("id", String(form.get("id")));
   revalidatePath("/admin");
 }
+
+export async function saveMarketSettings(form: FormData) {
+  const supabase = await createClient();
+  const fee = Math.min(50, Math.max(0, Number(form.get("fee_percent"))));
+  const quick = Math.min(100, Math.max(0, Number(form.get("quick_sell_pct"))));
+  await supabase.from("market_settings").update({ fee_percent: fee, quick_sell_pct: quick }).eq("id", true);
+  revalidatePath("/admin");
+}

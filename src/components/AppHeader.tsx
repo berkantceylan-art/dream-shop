@@ -6,6 +6,7 @@ import Credits from "./Credits";
 const NAV = [
   { href: "/profil", label: "Profil", icon: "👤" },
   { href: "/sehir", label: "Şehir", icon: "🏙️" },
+  { href: "/pazar", label: "Pazar", icon: "🤝" },
   { href: "/envanter", label: "Eşyalarım", icon: "🎒" },
   { href: "/karakter", label: "Karakter", icon: "🧍" },
 ];

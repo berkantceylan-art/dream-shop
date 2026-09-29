@@ -28,6 +28,7 @@ const TX: Record<string, { label: string; icon: string }> = {
   gift: { label: "Hediye kredi", icon: "🎁" }, admin_adjust: { label: "Düzeltme", icon: "🛠️" }, refund: { label: "İade", icon: "↩️" },
   quest_reward: { label: "Görev ödülü", icon: "🎯" }, gift_card_create: { label: "Hediye çeki oluşturma", icon: "🎟️" },
   gift_card_redeem: { label: "Hediye çeki kullanımı", icon: "🎟️" },
+  resale_fee: { label: "Pazar komisyonu", icon: "🏷️" }, quick_sell: { label: "Hızlı satış", icon: "⚡" },
 };
 const TICKET_STATUS: Record<string, string> = { open: "🟡 Açık", answered: "🟢 Yanıtlandı", closed: "⚪ Kapandı" };
 const fmtDate = (d: string) => new Date(d).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" });
@@ -96,7 +97,7 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
     const rows = (data ?? []) as unknown as { id: string; status: string; source: string; paid_credits: number; acquired_at: string;
       products: Product & { stores: { name: string } | null; chains: { name: string } | null } }[];
     const SRC: Record<string, string> = { store: "Mağaza", resale: "2. el", gift: "Hediye", signup: "Başlangıç" };
-    const ST: Record<string, string> = { owned: "Sende", listed: "Satışta", sold: "Satıldı", gifted: "Hediye edildi" };
+    const ST: Record<string, string> = { owned: "Sende", listed: "🤝 Satışta", sold: "Satıldı", gifted: "Hediye edildi" };
     body = (
       <Panel title="🧾 Siparişlerim">
         {!rows.length ? <EmptyRow text="Henüz bir şey satın almadın." cta={{ href: "/sehir", label: "Alışverişe çık 🛍️" }} /> : (
@@ -142,7 +143,7 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
             {(txs ?? []).map((t) => {
               const incoming = t.to_user === me.id;
               const other = incoming ? t.from_user : t.to_user;
-              const meta = TX[t.type] ?? { label: t.type, icon: "•" };
+              const meta = t.type === "resale_purchase" && incoming ? { label: "2. el satış", icon: "🤝" } : TX[t.type] ?? { label: t.type, icon: "•" };
               return (
                 <div key={t.id} className="flex items-center gap-3 py-3">
                   <span className="text-2xl">{meta.icon}</span>
