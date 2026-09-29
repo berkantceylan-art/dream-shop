@@ -1,10 +1,13 @@
 import AuthForm from "./AuthForm";
+import SkyScene from "@/components/SkyScene";
 
-export default async function GirisPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams;
+export default async function GirisPage({ searchParams }: { searchParams: Promise<{ next?: string; mod?: string }> }) {
+  const { next, mod } = await searchParams;
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <AuthForm next={next?.startsWith("/") ? next : "/hesap"} />
-    </main>
+    <SkyScene>
+      <main className="flex min-h-screen items-center justify-center p-4 pb-64">
+        <AuthForm next={next?.startsWith("/") ? next : "/hesap"} initialMode={mod === "kayit" ? "up" : "in"} />
+      </main>
+    </SkyScene>
   );
 }

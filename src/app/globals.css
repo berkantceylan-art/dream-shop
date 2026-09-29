@@ -1,26 +1,82 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --font-display: var(--nf-display), system-ui, sans-serif;
+  --font-sans: var(--nf-body), system-ui, sans-serif;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-sky-top: #7cc4ff;
+  --color-sky-bottom: #d9f0ff;
+  --color-crystal: #c24dff;
+  --color-crystal-light: #ff8ad8;
+  --color-mint: #3ddc97;
+  --color-gold: #ffc53d;
+  --color-ink: #1e2a4a;
+  --color-cream: #fff8ec;
+  --color-night: #141b3d;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
+
+/* ---------- Animasyonlar ---------- */
+@keyframes bob   { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
+@keyframes spin3d{ from { transform: rotateY(0) } to { transform: rotateY(360deg) } }
+@keyframes drift { from { transform: translateX(-20vw) } to { transform: translateX(120vw) } }
+@keyframes pop   { 0% { transform: scale(.4); opacity: 0 } 60% { transform: scale(1.15); opacity: 1 } 100% { transform: scale(1) } }
+@keyframes rise  { from { transform: translateY(0); opacity: 1 } to { transform: translateY(-120px); opacity: 0 } }
+@keyframes glow  { 0%,100% { filter: drop-shadow(0 0 6px #ff8ad8aa) } 50% { filter: drop-shadow(0 0 18px #c24dffcc) } }
+
+.animate-bob   { animation: bob 3s ease-in-out infinite }
+.animate-spin3d{ animation: spin3d 6s linear infinite; transform-style: preserve-3d }
+.animate-pop   { animation: pop .6s cubic-bezier(.2,1.4,.4,1) both }
+.animate-rise  { animation: rise 1.6s ease-out forwards }
+.animate-glow  { animation: glow 2.5s ease-in-out infinite }
+
+/* ---------- Oyun arayüzü ---------- */
+.game-panel {
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 3px solid rgba(255,255,255,.9);
+  border-radius: 28px;
+  box-shadow: 0 10px 0 rgba(30,42,74,.10), 0 24px 60px rgba(30,42,74,.18);
+}
+
+.game-input {
+  width: 100%;
+  border-radius: 16px;
+  border: 2px solid #dbe4f5;
+  background: #fff;
+  padding: .85rem 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.game-input:focus { border-color: var(--color-crystal); box-shadow: 0 0 0 4px #c24dff22 }
+
+.game-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  border-radius: 18px;
+  padding: .9rem 1.4rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #fff;
+  background: linear-gradient(180deg, #d466ff, #a032e6);
+  box-shadow: 0 6px 0 #7a1fb8, 0 10px 20px #a032e655;
+  transition: transform .1s, box-shadow .1s, filter .15s;
+}
+.game-btn:hover:not(:disabled)  { transform: translateY(-2px); filter: brightness(1.05) }
+.game-btn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #7a1fb8 }
+.game-btn:disabled { opacity: .55 }
+.game-btn.mint { background: linear-gradient(180deg,#5ef0b0,#22b97a); box-shadow: 0 6px 0 #16865a, 0 10px 20px #22b97a55 }
+.game-btn.ghost { background: #fff; color: var(--color-ink); box-shadow: 0 6px 0 #cfd8ea }
+
+.chip {
+  border-radius: 999px; border: 2px solid #dbe4f5; background:#fff;
+  padding: .45rem .9rem; font-weight: 700; font-size: .9rem; transition: all .15s;
+}
+.chip[data-on="true"] { background: var(--color-crystal); border-color: var(--color-crystal); color: #fff }

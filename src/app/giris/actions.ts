@@ -23,7 +23,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   if (password.length < 8) return { error: "Şifre en az 8 karakter olmalı." };
 
   const supabase = await createClient();
-  const { data: taken } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
+  const { data: taken } = await supabase.from("public_profiles").select("id").eq("username", username).maybeSingle();
   if (taken) return { error: "Bu kullanıcı adı alınmış." };
 
   const origin = (await headers()).get("origin");
