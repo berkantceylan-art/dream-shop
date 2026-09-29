@@ -2,6 +2,7 @@ const TITLES: Record<string, string> = {
   aydinlatma: "KVKK Aydınlatma Metni",
   kosullar: "Kullanım Koşulları",
   "acik-riza": "Açık Rıza Metni",
+  magaza: "Mağaza Sözleşmesi",
 };
 
 export default async function YasalPage({ params }: { params: Promise<{ slug: string }> }) {
