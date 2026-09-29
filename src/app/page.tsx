@@ -3,11 +3,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CitySceneLazy } from "@/components/3d/Lazy";
 import Crystal from "@/components/Crystal";
+import { getSignupBonus, fmtCredits } from "@/lib/settings";
 
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/hesap");
+  const bonus = await getSignupBonus(supabase);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -26,7 +28,7 @@ export default async function Home() {
           <Link href="/giris" className="game-btn ghost">Giriş yap</Link>
         </div>
         <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 font-bold">
-          <Crystal size={16} /> Üye olana 1000 kredi hediye
+          <Crystal size={16} /> Üye olana {fmtCredits(bonus)} kredi hediye
         </p>
         </div>
       </main>

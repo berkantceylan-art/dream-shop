@@ -8,7 +8,7 @@ type City = { id: number; name: string };
 const LOADING_TIPS = ["AVM kapıları açılıyor…", "Vitrinler parlatılıyor…", "Garaj temizleniyor…", "Kristaller şarj ediliyor…"];
 const STEPS = ["Sen", "Şehrin", "Onaylar"];
 
-export default function OnboardWizard({ cities, username }: { cities: City[]; username: string }) {
+export default function OnboardWizard({ cities, username, bonus }: { cities: City[]; username: string; bonus: number }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
@@ -40,7 +40,7 @@ export default function OnboardWizard({ cities, username }: { cities: City[]; us
     });
   }
 
-  if (step === 3) return <Reward onDone={() => router.push("/karakter")} />;
+  if (step === 3) return <Reward bonus={bonus} onDone={() => router.push("/karakter")} />;
 
   return (
     <div className="game-panel animate-pop w-full max-w-md p-8">
@@ -124,7 +124,7 @@ function Check({ on, set, tag, children }: { on: boolean; set: (v: boolean) => v
   );
 }
 
-function Reward({ onDone }: { onDone: () => void }) {
+function Reward({ onDone, bonus }: { onDone: () => void; bonus: number }) {
   return (
     <div className="game-panel animate-pop relative w-full max-w-md overflow-hidden p-10 text-center">
       {Array.from({ length: 10 }).map((_, i) => (
@@ -133,7 +133,7 @@ function Reward({ onDone }: { onDone: () => void }) {
         </span>
       ))}
       <Crystal size={90} className="animate-bob animate-glow mx-auto" />
-      <h2 className="mt-4 font-display text-4xl font-bold">+1000 kredi!</h2>
+      <h2 className="mt-4 font-display text-4xl font-bold">+{bonus.toLocaleString("tr-TR")} kredi!</h2>
       <p className="mt-2 font-semibold text-ink/70">Hayatın başladı. Şimdi karakterini oluşturalım.</p>
       <button className="game-btn mint mt-8 w-full" onClick={onDone}>Hadi başlayalım →</button>
     </div>

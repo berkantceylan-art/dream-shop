@@ -8,8 +8,10 @@ const TEXT: Record<string, (d: Record<string, unknown>) => string> = {
   message: (d) => `sana mesaj gönderdi: “${d.preview ?? ""}”`,
   gift: (d) => `sana ${Number(d.amount).toLocaleString("tr-TR")} kredi hediye etti 🎁${d.note ? ` — “${d.note}”` : ""}`,
   ticket: (d) => `Destek talebin yanıtlandı: “${d.subject ?? ""}”`,
+  announcement: (d) => `📣 ${d.title ?? "Duyuru"} — ${d.body ?? ""}`,
+  admin_credit: (d) => `Dream Shop ekibi hesabına ${Number(d.amount) > 0 ? "+" : ""}${Number(d.amount).toLocaleString("tr-TR")} kredi işledi${d.note ? ` — “${d.note}”` : ""}`,
 };
-const ICON: Record<string, string> = { follow: "👤", home_like: "❤️", message: "💬", gift: "🎁", ticket: "🛟" };
+const ICON: Record<string, string> = { follow: "👤", home_like: "❤️", message: "💬", gift: "🎁", ticket: "🛟", announcement: "📣", admin_credit: "💎" };
 
 export default async function BildirimlerPage() {
   const { supabase, me } = await requireMe("/bildirimler");
@@ -23,7 +25,7 @@ export default async function BildirimlerPage() {
 
   const href = (n: { type: string; actor_id: string | null }) => {
     const u = n.actor_id ? uname.get(n.actor_id) : null;
-    return n.type === "message" && u ? `/mesajlar?k=${u}` : n.type === "gift" ? "/profil?tab=cuzdan" : n.type === "ticket" ? "/profil?tab=destek" : u ? `/u/${u}` : "#";
+    return n.type === "message" && u ? `/mesajlar?k=${u}` : n.type === "gift" || n.type === "admin_credit" ? "/profil?tab=cuzdan" : n.type === "ticket" ? "/profil?tab=destek" : u ? `/u/${u}` : "#";
   };
 
   return (
@@ -37,7 +39,7 @@ export default async function BildirimlerPage() {
             <Link key={n.id} href={href(n)} className={`flex items-center gap-3 rounded-2xl p-3 hover:bg-white ${n.read_at ? "" : "bg-crystal/5"}`}>
               <span className="text-2xl">{ICON[n.type] ?? "•"}</span>
               <span className="flex-1 text-sm">
-                {n.actor_id && <b>@{uname.get(n.actor_id) ?? "biri"} </b>}{(TEXT[n.type] ?? (() => n.type))(n.data as Record<string, unknown>)}
+                {n.actor_id && n.type !== "announcement" && <b>@{uname.get(n.actor_id) ?? "biri"} </b>}{(TEXT[n.type] ?? (() => n.type))(n.data as Record<string, unknown>)}
                 <span className="block text-xs text-ink/40">{new Date(n.created_at).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" })}</span>
               </span>
               {!n.read_at && <span className="h-2.5 w-2.5 rounded-full bg-crystal" />}

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SkyScene from "@/components/SkyScene";
 import OnboardWizard from "./OnboardWizard";
+import { getSignupBonus } from "@/lib/settings";
 
 export default async function KayitTamamlaPage() {
   const supabase = await createClient();
@@ -12,6 +13,7 @@ export default async function KayitTamamlaPage() {
     .eq("user_id", user.id).eq("type", "kvkk_terms").eq("granted", true).limit(1);
   if (done?.length) redirect("/hesap");
 
+  const bonus = await getSignupBonus(supabase);
   const [{ data: cities }, { data: profile }] = await Promise.all([
     supabase.from("cities").select("id,name").order("name"),
     supabase.from("profiles").select("username").eq("id", user.id).single(),
@@ -19,7 +21,7 @@ export default async function KayitTamamlaPage() {
   return (
     <SkyScene>
       <main className="flex min-h-screen items-center justify-center p-4 pb-64">
-        <OnboardWizard cities={(cities ?? []).sort((a, b) => a.name.localeCompare(b.name, "tr"))} username={profile?.username ?? ""} />
+        <OnboardWizard cities={(cities ?? []).sort((a, b) => a.name.localeCompare(b.name, "tr"))} username={profile?.username ?? ""} bonus={bonus} />
       </main>
     </SkyScene>
   );

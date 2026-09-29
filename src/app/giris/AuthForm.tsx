@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { signIn, signUp, type AuthState } from "./actions";
 import Crystal from "@/components/Crystal";
 
-export default function AuthForm({ next, initialMode }: { next: string; initialMode: "in" | "up" }) {
+export default function AuthForm({ next, initialMode, bonus }: { next: string; initialMode: "in" | "up"; bonus: number }) {
   const [mode, setMode] = useState(initialMode);
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === "in" ? signIn : signUp, {});
   const isUp = mode === "up";
@@ -20,7 +20,7 @@ export default function AuthForm({ next, initialMode }: { next: string; initialM
         {isUp ? "Yeni hayatına başla" : "Tekrar hoş geldin!"}
       </h1>
       <p className="mb-6 text-center text-sm font-semibold text-ink/60">
-        {isUp ? "Karakterini oluştur, 1000 kredi kazan." : "Şehrin seni bekliyor."}
+        {isUp ? `Karakterini oluştur, ${bonus.toLocaleString("tr-TR")} kredi kazan.` : "Şehrin seni bekliyor."}
       </p>
 
       <form action={action} className="flex flex-col gap-3">
