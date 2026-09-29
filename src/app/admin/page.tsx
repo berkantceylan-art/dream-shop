@@ -70,7 +70,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         </section>
         <section className="game-panel mt-4 p-6">
           <h2 className="mb-2 font-display text-2xl font-bold">Tüm ürünler</h2>
-          <ProductTable products={rows} />
+          <ProductTable products={rows} categories={categories ?? []} userId={me.id} />
         </section>
       </>
     );

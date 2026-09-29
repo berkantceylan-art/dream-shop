@@ -72,7 +72,7 @@ export default async function PanelPage() {
         </section>
         <section className="game-panel p-6">
           <h2 className="mb-2 font-display text-2xl font-bold">📦 Ürünlerim</h2>
-          <ProductTable products={(products ?? []) as Product[]} sales={sales} />
+          <ProductTable products={(products ?? []) as Product[]} sales={sales} categories={categories ?? []} userId={me.id} />
         </section>
       </div>
     );

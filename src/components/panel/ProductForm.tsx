@@ -3,17 +3,22 @@ import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CLOTH_COLORS, TOP_LABELS, BOTTOM_LABELS } from "@/lib/avatar";
 import { saveProduct } from "./productActions";
+import type { Product } from "@/lib/catalog";
 
 type Cat = { id: number; name: string; parent_id: number | null };
 
-export default function ProductForm({ storeId, categories, userId, onDone }: {
-  storeId: string | null; categories: Cat[]; userId: string; onDone?: () => void;
+export default function ProductForm({ storeId, categories, userId, onDone, initial }: {
+  storeId: string | null; categories: Cat[]; userId: string; onDone?: () => void; initial?: Product;
 }) {
+  const av = (initial?.attributes?.avatar ?? {}) as { style?: string; color?: string };
   const [f, setF] = useState({
-    name: "", brand: "", description: "", category_id: 0, credit_price: "", real_price_try: "",
-    avatar_style: "", avatar_color: "",
+    name: initial?.name ?? "", brand: initial?.brand ?? "", description: initial?.description ?? "",
+    category_id: initial?.category_id ?? 0,
+    credit_price: initial ? String(initial.credit_price) : "",
+    real_price_try: initial?.real_price_try != null ? String(initial.real_price_try) : "",
+    avatar_style: av.style ?? "", avatar_color: av.color ?? "",
   });
-  const [img, setImg] = useState<string | null>(null);
+  const [img, setImg] = useState<string | null>(initial?.thumbnail_url ?? null);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ ok?: string; err?: string }>({});
   const [pending, start] = useTransition();
@@ -38,11 +43,13 @@ export default function ProductForm({ storeId, categories, userId, onDone }: {
     e.preventDefault(); setMsg({});
     start(async () => {
       const r = await saveProduct({
-        store_id: storeId, category_id: f.category_id, name: f.name, brand: f.brand, description: f.description,
+        id: initial?.id,
+        store_id: initial ? initial.store_id : storeId, category_id: f.category_id, name: f.name, brand: f.brand, description: f.description,
         credit_price: Number(f.credit_price), real_price_try: f.real_price_try ? Number(f.real_price_try) : null,
         thumbnail_url: img, avatar_style: f.avatar_style || null, avatar_color: f.avatar_color || null,
       });
       if (r.error) return setMsg({ err: r.error });
+      if (initial) { onDone?.(); return; }
       setMsg({ ok: `“${f.name}” rafa kondu ✅` });
       setF({ name: "", brand: "", description: "", category_id: f.category_id, credit_price: "", real_price_try: "", avatar_style: "", avatar_color: "" });
       setImg(null); onDone?.();
@@ -99,7 +106,7 @@ export default function ProductForm({ storeId, categories, userId, onDone }: {
 
         {msg.err && <p className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-600">{msg.err}</p>}
         {msg.ok && <p className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">{msg.ok}</p>}
-        <button className="game-btn" disabled={pending || uploading}>{pending ? "Rafa diziliyor…" : "Ürünü ekle"}</button>
+        <button className="game-btn" disabled={pending || uploading}>{pending ? "Kaydediliyor…" : initial ? "Değişiklikleri kaydet" : "Ürünü ekle"}</button>
       </div>
     </form>
   );

@@ -42,12 +42,10 @@ export async function saveProduct(input: ProductInput): Promise<{ error?: string
     thumbnail_url: input.thumbnail_url,
     attributes: c.slot && input.avatar_color
       ? { avatar: { style: input.avatar_style || undefined, color: input.avatar_color } } : {},
-    status: "active",
-    created_by: user.id,
   };
   const { error } = input.id
     ? await supabase.from("products").update(row).eq("id", input.id)
-    : await supabase.from("products").insert(row);
+    : await supabase.from("products").insert({ ...row, status: "active", created_by: user.id });
   if (error) return { error: error.message.includes("row-level") ? "Bu işlem için yetkin yok (mağazan onaylı mı?)." : error.message };
   revalidatePath("/panel"); revalidatePath("/admin");
   return {};
@@ -58,4 +56,19 @@ export async function setProductStatus(id: string, status: "active" | "archived"
   const { error } = await supabase.from("products").update({ status }).eq("id", id);
   revalidatePath("/panel"); revalidatePath("/admin");
   return error ? { error: error.message } : {};
+}
+
+export async function deleteProduct(id: string): Promise<{ error?: string; archived?: boolean }> {
+  const supabase = await createClient();
+  const { error, count } = await supabase.from("products").delete({ count: "exact" }).eq("id", id);
+  if (error?.code === "23503") {
+    // Ürün satılmış: oyuncuların envanterinde durduğu için silinemez, yayından kaldırılır.
+    await supabase.from("products").update({ status: "archived" }).eq("id", id);
+    revalidatePath("/panel"); revalidatePath("/admin");
+    return { archived: true };
+  }
+  if (error) return { error: error.message };
+  if (!count) return { error: "Silme yetkin yok." };
+  revalidatePath("/panel"); revalidatePath("/admin");
+  return {};
 }
