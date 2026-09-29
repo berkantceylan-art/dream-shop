@@ -61,3 +61,14 @@ export async function saveMarketSettings(form: FormData) {
   await supabase.from("market_settings").update({ fee_percent: fee, quick_sell_pct: quick }).eq("id", true);
   revalidatePath("/admin");
 }
+
+export async function approveBuyer(id: string, ok: boolean) {
+  const supabase = await createClient();
+  await supabase.rpc("admin_approve_buyer", { p_buyer: id, p_ok: ok });
+  revalidatePath("/admin");
+}
+export async function reviewReport(form: FormData) {
+  const supabase = await createClient();
+  await supabase.from("user_reports").update({ status: "reviewed" }).eq("id", Number(form.get("id")));
+  revalidatePath("/admin");
+}

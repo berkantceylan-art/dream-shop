@@ -4,8 +4,8 @@ import { PRODUCT_COLS, type Product } from "@/lib/catalog";
 import AppHeader from "@/components/AppHeader";
 import ProductForm from "@/components/panel/ProductForm";
 import ProductTable from "@/components/panel/ProductTable";
-import { StoreActions, RoleSelect } from "./AdminButtons";
-import { addMall, replyTicket, saveMarketSettings } from "./actions";
+import { StoreActions, RoleSelect, BuyerActions } from "./AdminButtons";
+import { addMall, replyTicket, saveMarketSettings, reviewReport } from "./actions";
 import { CreateGiftForm } from "@/app/profil/Forms";
 import AdminStoreForm from "./AdminStoreForm";
 import type { StoreOption, ChainOption } from "@/components/panel/ProductForm";
@@ -18,6 +18,8 @@ const TABS = [
   { id: "kullanicilar", label: "Kullanıcılar", icon: "👥" },
   { id: "avm", label: "AVM'ler", icon: "🏬" },
   { id: "pazar", label: "2. El Pazarı", icon: "🤝" },
+  { id: "veri", label: "Veri alıcıları", icon: "📊" },
+  { id: "sikayet", label: "Şikâyetler", icon: "🚩" },
   { id: "destek", label: "Destek", icon: "🛟" },
   { id: "kodlar", label: "Kampanya kodları", icon: "🎟️" },
 ];
@@ -240,6 +242,69 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </div>
         </section>
       </>
+    );
+  }
+
+  if (tab === "veri") {
+    const [{ data: buyers }, { data: queries }] = await Promise.all([
+      supabase.from("data_buyers").select("id, company, tax_no, contact_email, sector, purpose, approved, created_at").order("created_at", { ascending: false }),
+      supabase.from("report_queries").select("id, kind, filters, rows, created_at").order("created_at", { ascending: false }).limit(30),
+    ]);
+    content = (
+      <>
+        <section className="game-panel p-6">
+          <h2 className="mb-3 font-display text-2xl font-bold">📊 Veri alıcısı başvuruları</h2>
+          {!buyers?.length && <p className="font-semibold text-ink/50">Başvuru yok.</p>}
+          <div className="divide-y divide-[#e6ecf7]">
+            {(buyers ?? []).map((b) => (
+              <div key={b.id} className="flex flex-wrap items-center gap-3 py-3">
+                <div className="min-w-60 flex-1">
+                  <p className="font-bold">{b.company} {b.approved ? "✅" : "⏳"}</p>
+                  <p className="text-xs font-semibold text-ink/50">{[b.sector, b.contact_email, b.tax_no && `VKN ${b.tax_no}`].filter(Boolean).join(" · ")}</p>
+                  {b.purpose && <p className="mt-1 text-sm text-ink/70">“{b.purpose}”</p>}
+                </div>
+                <BuyerActions id={b.id} approved={b.approved} />
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="game-panel mt-4 p-6">
+          <h2 className="mb-3 font-display text-2xl font-bold">Son rapor sorguları (denetim izi)</h2>
+          <div className="divide-y divide-[#e6ecf7] text-sm">
+            {(queries ?? []).map((q) => (
+              <p key={q.id} className="flex gap-2 py-2"><b>{q.kind}</b><code className="flex-1 truncate text-xs text-ink/60">{JSON.stringify(q.filters)}</code>
+                <span>{q.rows} satır</span><span className="text-ink/40">{new Date(q.created_at).toLocaleString("tr-TR")}</span></p>
+            ))}
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  if (tab === "sikayet") {
+    const { data: reports } = await supabase.from("user_reports").select("id, reporter_id, reported_id, reason, details, status, created_at")
+      .order("status").order("created_at", { ascending: false }).limit(200);
+    const ids = Array.from(new Set((reports ?? []).flatMap((r) => [r.reporter_id, r.reported_id])));
+    const { data: people } = ids.length ? await supabase.from("public_profiles").select("id, username").in("id", ids) : { data: [] };
+    const u = new Map((people ?? []).map((p) => [p.id, p.username]));
+    content = (
+      <section className="game-panel p-6">
+        {!reports?.length && <p className="font-semibold text-ink/50">Şikâyet yok 🎉</p>}
+        <div className="divide-y divide-[#e6ecf7]">
+          {(reports ?? []).map((r) => (
+            <div key={r.id} className={`flex flex-wrap items-center gap-3 py-3 ${r.status === "reviewed" ? "opacity-50" : ""}`}>
+              <div className="flex-1">
+                <p className="font-bold"><Link className="text-crystal" href={`/u/${u.get(r.reported_id)}`}>@{u.get(r.reported_id)}</Link> · {r.reason}</p>
+                <p className="text-xs font-semibold text-ink/50">Bildiren @{u.get(r.reporter_id)} · {new Date(r.created_at).toLocaleString("tr-TR")}</p>
+                {r.details && <p className="mt-1 text-sm">{r.details}</p>}
+              </div>
+              {r.status === "open" && (
+                <form action={reviewReport}><input type="hidden" name="id" value={r.id} /><button className="chip">İncelendi</button></form>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
     );
   }
 

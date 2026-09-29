@@ -1,6 +1,6 @@
 "use client";
 import { useTransition } from "react";
-import { setRole, setStoreStatus } from "./actions";
+import { approveBuyer, setRole, setStoreStatus } from "./actions";
 
 export function StoreActions({ id, status }: { id: string; status: string }) {
   const [pending, start] = useTransition();
@@ -23,5 +23,13 @@ export function RoleSelect({ id, role }: { id: string; role: string }) {
       <option value="data_buyer">Veri alıcısı</option>
       <option value="admin">Admin</option>
     </select>
+  );
+}
+
+export function BuyerActions({ id, approved }: { id: string; approved: boolean }) {
+  const [pending, start] = useTransition();
+  return (
+    <button disabled={pending} className={`chip ${approved ? "!border-red-300 !text-red-600" : "!border-mint !text-[#16865a]"}`}
+      onClick={() => start(() => approveBuyer(id, !approved))}>{approved ? "Erişimi kaldır" : "✓ Onayla"}</button>
   );
 }

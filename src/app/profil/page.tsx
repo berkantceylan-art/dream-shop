@@ -68,6 +68,8 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
               <Link href="/sehir" className="game-btn mint !py-2">Şehre çık 🏙️</Link>
               <Link href="/karakter" className="game-btn ghost !py-2">Karakteri düzenle</Link>
               <Link href="/envanter" className="game-btn ghost !py-2">Eşyalarım</Link>
+              <Link href={`/u/${me.username}`} className="game-btn ghost !py-2">👁️ Herkese açık profilim</Link>
+              {me.role === "user" && <Link href="/rapor" className="game-btn ghost !py-2">📊 Şirketim için rapor al</Link>}
             </div>
           </div>
         </div>
@@ -263,7 +265,7 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
 
   if (tab === "ayarlar") {
     const [{ data: p }, { data: cities }, { data: districts }, { data: consents }] = await Promise.all([
-      supabase.from("profiles").select("display_name, city_id, district").eq("id", me.id).single(),
+      supabase.from("profiles").select("display_name, city_id, district, bio, dm_policy, home_visibility").eq("id", me.id).single(),
       supabase.from("cities").select("id, name"),
       supabase.from("districts").select("city_id, name").order("name").limit(2000),
       supabase.from("consents").select("type, granted, created_at").eq("user_id", me.id).order("created_at", { ascending: false }),
@@ -271,7 +273,7 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
     const latest = (t: string) => (consents ?? []).find((c) => c.type === t)?.granted ?? false;
     body = (
       <div className="grid gap-4 md:grid-cols-2">
-        <Panel title="👤 Profil bilgileri">
+        <Panel title="👤 Profil ve gizlilik">
           <ProfileForm cities={(cities ?? []).sort((a, b) => a.name.localeCompare(b.name, "tr"))} districts={districts ?? []}
             initial={p ?? { display_name: null, city_id: null, district: null }} />
           <p className="mt-4 text-sm font-semibold text-ink/60">Beden, telefon ve yaşam tarzı bilgilerin için <Link href="/gorevler/beden" className="text-crystal underline">görevlere</Link> bak.</p>

@@ -97,7 +97,8 @@ export function TicketForm({ defaultCategory = "hata" }: { defaultCategory?: str
 type City = { id: number; name: string };
 export function ProfileForm({ cities, districts, initial }: {
   cities: City[]; districts: { city_id: number; name: string }[];
-  initial: { display_name: string | null; city_id: number | null; district: string | null };
+  initial: { display_name: string | null; city_id: number | null; district: string | null;
+    bio?: string | null; dm_policy?: string; home_visibility?: string };
 }) {
   const [s, action, pending] = useActionState<FormState, FormData>(updateProfileAction, {});
   const [city, setCity] = useState(initial.city_id ?? 34);
@@ -112,6 +113,19 @@ export function ProfileForm({ cities, districts, initial }: {
           <option value="">İlçe seç</option>
           {districts.filter((d) => d.city_id === city).map((d) => <option key={d.name} value={d.name}>{d.name}</option>)}
         </select>
+      </div>
+      <textarea name="bio" maxLength={300} defaultValue={initial.bio ?? ""} className="game-input min-h-20" placeholder="Biyografi — kendini birkaç kelimeyle anlat" />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="text-sm font-bold">💬 Bana kim mesaj atabilir?
+          <select name="dm_policy" defaultValue={initial.dm_policy ?? "everyone"} className="game-input mt-1">
+            <option value="everyone">Herkes</option><option value="followers">Takip ettiklerim</option><option value="none">Kimse</option>
+          </select>
+        </label>
+        <label className="text-sm font-bold">🏡 Evimi kim ziyaret edebilir?
+          <select name="home_visibility" defaultValue={initial.home_visibility ?? "everyone"} className="game-input mt-1">
+            <option value="everyone">Herkes</option><option value="followers">Takip ettiklerim</option><option value="none">Kimse</option>
+          </select>
+        </label>
       </div>
       <Msg s={s} />
       <button className="game-btn" disabled={pending}>{pending ? "Kaydediliyor…" : "Kaydet"}</button>

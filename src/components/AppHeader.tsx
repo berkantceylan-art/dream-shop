@@ -5,6 +5,7 @@ import Credits from "./Credits";
 
 const NAV = [
   { href: "/profil", label: "Profil", icon: "👤" },
+  { href: "/sosyal", label: "Sosyal", icon: "👥" },
   { href: "/sehir", label: "Şehir", icon: "🏙️" },
   { href: "/pazar", label: "Pazar", icon: "🤝" },
   { href: "/envanter", label: "Eşyalarım", icon: "🎒" },
@@ -16,6 +17,7 @@ const NAV = [
 export default function AppHeader({ me }: { me: Me }) {
   const extra = [
     ...(me.role === "store_owner" || me.role === "user" ? [{ href: "/panel", label: me.role === "store_owner" ? "Mağazam" : "Mağaza aç", icon: "🏪" }] : []),
+    ...(me.role === "admin" || me.role === "data_buyer" ? [{ href: "/rapor", label: "Raporlar", icon: "📊" }] : []),
     ...(me.role === "admin" ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
   ];
   return (
@@ -33,11 +35,26 @@ export default function AppHeader({ me }: { me: Me }) {
           ))}
         </nav>
         <Link href="/profil?tab=cuzdan" className="shrink-0 rounded-full bg-white px-3 py-1 shadow"><Credits amount={me.balance} /></Link>
+        <Badge href="/mesajlar" icon="💬" n={me.unread_messages} title="Mesajlar" />
+        <Badge href="/bildirimler" icon="🔔" n={me.unread_notifications} title="Bildirimler" />
         <Link href="/profil?tab=destek" title="Hata bildir / destek" className="shrink-0 text-lg">🛟</Link>
         <form action="/auth/cikis" method="post">
           <button className="shrink-0 text-xs font-bold text-ink/50 hover:underline">Çıkış</button>
         </form>
       </div>
     </header>
+  );
+}
+
+function Badge({ href, icon, n, title }: { href: string; icon: string; n: number; title: string }) {
+  return (
+    <Link href={href} title={title} className="relative shrink-0 text-lg">
+      {icon}
+      {n > 0 && (
+        <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          {n > 99 ? "99+" : n}
+        </span>
+      )}
+    </Link>
   );
 }
