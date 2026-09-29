@@ -7,9 +7,14 @@ import type { Product } from "@/lib/catalog";
 
 type Cat = { id: number; name: string; parent_id: number | null };
 
-export default function ProductForm({ storeId, categories, userId, onDone, initial }: {
+export type StoreOption = { id: string; label: string; group: string };
+
+export default function ProductForm({ storeId, categories, userId, onDone, initial, stores }: {
   storeId: string | null; categories: Cat[]; userId: string; onDone?: () => void; initial?: Product;
+  /** Verilirse (admin) ürünün satılacağı yer seçilebilir. */
+  stores?: StoreOption[];
 }) {
+  const [place, setPlace] = useState<string>(initial ? initial.store_id ?? "" : storeId ?? "");
   const av = (initial?.attributes?.avatar ?? {}) as { style?: string; color?: string };
   const [f, setF] = useState({
     name: initial?.name ?? "", brand: initial?.brand ?? "", description: initial?.description ?? "",
@@ -44,7 +49,7 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
     start(async () => {
       const r = await saveProduct({
         id: initial?.id,
-        store_id: initial ? initial.store_id : storeId, category_id: f.category_id, name: f.name, brand: f.brand, description: f.description,
+        store_id: stores ? (place || null) : initial ? initial.store_id : storeId, category_id: f.category_id, name: f.name, brand: f.brand, description: f.description,
         credit_price: Number(f.credit_price), real_price_try: f.real_price_try ? Number(f.real_price_try) : null,
         thumbnail_url: img, avatar_style: f.avatar_style || null, avatar_color: f.avatar_color || null,
       });
@@ -65,6 +70,20 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
         <input type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
       </label>
       <div className="grid gap-3">
+        {stores && (
+          <div>
+            <p className="mb-1 text-sm font-bold">📍 Nerede satılsın?</p>
+            <select className="game-input" value={place} onChange={(e) => setPlace(e.target.value)}>
+              <option value="">🛍️ Dream Outlet — tüm şehirlerde</option>
+              {Array.from(new Set(stores.map((s) => s.group))).map((g) => (
+                <optgroup key={g} label={g}>
+                  {stores.filter((s) => s.group === g).map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+            {!stores.length && <p className="mt-1 text-xs font-semibold text-ink/50">AVM'de satmak için önce Mağazalar sekmesinden bir mağaza aç.</p>}
+          </div>
+        )}
         <input className="game-input" placeholder="Ürün adı *" value={f.name} onChange={(e) => set("name", e.target.value)} required />
         <div className="grid grid-cols-2 gap-3">
           <input className="game-input" placeholder="Marka" value={f.brand} onChange={(e) => set("brand", e.target.value)} />

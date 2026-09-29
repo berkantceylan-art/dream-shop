@@ -6,6 +6,8 @@ import ProductForm from "@/components/panel/ProductForm";
 import ProductTable from "@/components/panel/ProductTable";
 import { StoreActions, RoleSelect } from "./AdminButtons";
 import { addMall } from "./actions";
+import AdminStoreForm from "./AdminStoreForm";
+import type { StoreOption } from "@/components/panel/ProductForm";
 
 const TABS = [
   { id: "genel", label: "Genel bakış", icon: "📊" },
@@ -50,27 +52,48 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   }
 
   if (tab === "magazalar") {
-    const { data: stores } = await supabase.from("stores")
-      .select("id, name, created_at, status, cities(name), malls(name)").order("created_at", { ascending: false }).limit(200);
-    content = <section className="game-panel p-6"><StoreRows stores={stores ?? []} /></section>;
-  }
-
-  if (tab === "urunler") {
-    const [{ data: products }, { data: categories }] = await Promise.all([
-      supabase.from("products").select(`${PRODUCT_COLS}, stores(name)`).order("created_at", { ascending: false }).limit(200),
-      supabase.from("categories").select("id, name, parent_id").order("id"),
+    const [{ data: stores }, { data: cities }, { data: malls }] = await Promise.all([
+      supabase.from("stores").select("id, name, created_at, status, cities(name), malls(name)").order("created_at", { ascending: false }).limit(200),
+      supabase.from("cities").select("id, name"),
+      supabase.from("malls").select("id, name, city_id").order("name"),
     ]);
-    const rows = (products ?? []).map((p) => ({ ...(p as unknown as Product), store_name: (p.stores as unknown as { name: string } | null)?.name ?? "Dream Outlet" }));
     content = (
       <>
         <section className="game-panel p-6">
-          <h2 className="font-display text-2xl font-bold">➕ Dream Outlet'e ürün ekle</h2>
-          <p className="mb-4 text-sm font-semibold text-ink/50">Admin ürünleri her şehirdeki resmi Dream Outlet mağazasında satılır.</p>
-          <ProductForm storeId={null} categories={categories ?? []} userId={me.id} />
+          <h2 className="font-display text-2xl font-bold">➕ Yeni mağaza aç</h2>
+          <p className="mb-4 text-sm font-semibold text-ink/50">Admin tarafından açılan mağazalar onaysız, doğrudan yayına girer.</p>
+          <AdminStoreForm cities={(cities ?? []).sort((a, b) => a.name.localeCompare(b.name, "tr"))} malls={malls ?? []} />
+        </section>
+        <section className="game-panel mt-4 p-6"><StoreRows stores={stores ?? []} /></section>
+      </>
+    );
+  }
+
+  if (tab === "urunler") {
+    const [{ data: products }, { data: categories }, { data: storeList }] = await Promise.all([
+      supabase.from("products").select(`${PRODUCT_COLS}, stores(name, cities(name), malls(name))`).order("created_at", { ascending: false }).limit(200),
+      supabase.from("categories").select("id, name, parent_id").order("id"),
+      supabase.from("stores").select("id, name, cities(name), malls(name)").eq("status", "approved").order("name"),
+    ]);
+    type Loc = { name: string; cities: { name: string } | null; malls: { name: string } | null } | null;
+    const where = (s: Loc) => s ? `${s.name} (${s.cities?.name} · ${s.malls?.name ?? "Cadde"})` : "Dream Outlet";
+    const rows = (products ?? []).map((p) => ({ ...(p as unknown as Product), store_name: where(p.stores as unknown as Loc) }));
+    const storeOptions: StoreOption[] = (storeList ?? []).map((st) => {
+      const l = st as unknown as NonNullable<Loc> & { id: string };
+      return { id: l.id, label: `${l.name} — ${l.malls?.name ?? "Cadde"}`, group: l.cities?.name ?? "" };
+    }).sort((a, b) => a.group.localeCompare(b.group, "tr"));
+    content = (
+      <>
+        <section className="game-panel p-6">
+          <h2 className="font-display text-2xl font-bold">➕ Yeni ürün</h2>
+          <p className="mb-4 text-sm font-semibold text-ink/50">
+            Dream Outlet'e eklenen ürünler tüm şehirlerde görünür. AVM veya cadde mağazası seçersen yalnızca orada satılır.
+          </p>
+          <ProductForm storeId={null} categories={categories ?? []} userId={me.id} stores={storeOptions} />
         </section>
         <section className="game-panel mt-4 p-6">
           <h2 className="mb-2 font-display text-2xl font-bold">Tüm ürünler</h2>
-          <ProductTable products={rows} categories={categories ?? []} userId={me.id} />
+          <ProductTable products={rows} categories={categories ?? []} userId={me.id} stores={storeOptions} />
         </section>
       </>
     );

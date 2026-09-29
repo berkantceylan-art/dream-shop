@@ -24,3 +24,20 @@ export async function addMall(form: FormData) {
   });
   revalidatePath("/admin");
 }
+
+export type StoreFormState = { error?: string; ok?: string };
+export async function adminCreateStore(_: StoreFormState, form: FormData): Promise<StoreFormState> {
+  const { slugify } = await import("@/lib/slug");
+  const name = String(form.get("name") || "").trim();
+  const cityId = Number(form.get("city_id"));
+  if (name.length < 2 || !cityId) return { error: "Mağaza adı ve şehir gerekli." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("stores").insert({
+    name, city_id: cityId, mall_id: String(form.get("mall_id") || "") || null,
+    slug: `${slugify(name)}-${Math.random().toString(36).slice(2, 6)}`,
+    status: "approved", owner_id: null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin");
+  return { ok: `“${name}” açıldı. Artık Ürünler sekmesinden bu mağazaya ürün ekleyebilirsin.` };
+}
