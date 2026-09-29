@@ -46,7 +46,12 @@ export async function saveProduct(input: ProductInput): Promise<{ error?: string
     real_price_try: input.real_price_try,
     thumbnail_url: input.thumbnail_url,
     attributes: c.slot && input.avatar_color
-      ? { avatar: { style: input.avatar_style || undefined, color: input.avatar_color } } : {},
+      ? { avatar: { style: input.avatar_style || undefined, color: input.avatar_color } }
+      : c.kind === "car" && (input.avatar_style || input.avatar_color)
+      ? { car: { shape: input.avatar_style || undefined, color: input.avatar_color || undefined } }
+      : c.kind === "house" && (input.avatar_style || input.avatar_color)
+      ? { home: { size: input.avatar_style || undefined, color: input.avatar_color || undefined } }
+      : c.kind === "furniture" && input.avatar_color ? { furniture: { color: input.avatar_color } } : {},
   };
   const { error } = input.id
     ? await supabase.from("products").update(row).eq("id", input.id)

@@ -65,6 +65,13 @@ export default async function EnvanterPage({ searchParams }: { searchParams: Pro
               </Link>
             ))}
           </div>
+          {(active.id === "garaj" || active.id === "evim") && (
+            <Link href={active.id === "garaj" ? "/garaj" : "/evim"} className="game-panel mb-4 flex items-center gap-3 p-4 transition hover:-translate-y-0.5">
+              <span className="text-3xl">{active.icon}</span>
+              <span className="flex-1 font-display text-lg font-bold">{active.id === "garaj" ? "Garajını 3D gör" : "Evini 3D gör ve eşyalarını yerleştir"}</span>
+              <span className="game-btn !py-2">Aç →</span>
+            </Link>
+          )}
           {list.length === 0 ? (
             <div className="game-panel p-10 text-center">
               <p className="text-5xl">{active.icon}</p>

@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { CLOTH_COLORS, TOP_LABELS, BOTTOM_LABELS } from "@/lib/avatar";
+import { CAR_SHAPES, HOME_SIZES } from "@/lib/home";
 import { saveProduct } from "./productActions";
 import type { Product } from "@/lib/catalog";
 
@@ -18,7 +19,9 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
 }) {
   const [place, setPlace] = useState<string>(
     initial?.chain_id ? `c:${initial.chain_id}` : initial?.store_id ? `s:${initial.store_id}` : storeId ? `s:${storeId}` : "");
-  const av = (initial?.attributes?.avatar ?? {}) as { style?: string; color?: string };
+  const at = initial?.attributes ?? {};
+  const avRaw = (at.avatar ?? at.car ?? at.home ?? at.furniture ?? {}) as { style?: string; shape?: string; size?: string; color?: string };
+  const av = { style: avRaw.style ?? avRaw.shape ?? avRaw.size, color: avRaw.color };
   const [f, setF] = useState({
     name: initial?.name ?? "", brand: initial?.brand ?? "", description: initial?.description ?? "",
     category_id: initial?.category_id ?? 0,
@@ -34,6 +37,8 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
 
   const top = [1, 2, 5].includes(f.category_id), bottom = f.category_id === 3, shoes = f.category_id === 4;
   const wearable = top || bottom || shoes;
+  const isCar = f.category_id === 7, isHouse = f.category_id === 8, isFurniture = f.category_id === 9;
+  const HOME_COLORS = ["#fff1c7", "#ffe3f1", "#d8ecff", "#d9f7e8", "#efe3ff", "#ffffff", "#ffe0cc"];
 
   async function upload(file: File) {
     if (file.size > 3 * 1024 * 1024) return setMsg({ err: "Görsel en fazla 3 MB olabilir." });
@@ -130,6 +135,25 @@ export default function ProductForm({ storeId, categories, userId, onDone, initi
                   className={`h-8 w-8 rounded-full border-4 ${f.avatar_color === c ? "border-crystal" : "border-white"}`} style={{ background: c }} />
               ))}
               <input type="color" value={f.avatar_color || "#ffffff"} onChange={(e) => set("avatar_color", e.target.value)} className="h-8 w-10" />
+            </div>
+          </div>
+        )}
+
+        {(isCar || isHouse || isFurniture) && (
+          <div className="rounded-2xl bg-[#d8ecff]/60 p-3">
+            <p className="mb-2 text-sm font-bold">{isCar ? "🚗 Garajda nasıl görünsün?" : isHouse ? "🏡 Ev tipi ve duvar rengi" : "🛋️ Evde hangi renkte görünsün?"}</p>
+            {!isFurniture && (
+              <div className="mb-2 flex flex-wrap gap-2">
+                {Object.entries(isCar ? CAR_SHAPES : Object.fromEntries(Object.entries(HOME_SIZES).map(([k, v]) => [k, v.label]))).map(([k, l]) => (
+                  <button type="button" key={k} className="chip" data-on={f.avatar_style === k} onClick={() => set("avatar_style", k)}>{l}</button>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {(isHouse ? HOME_COLORS : CLOTH_COLORS).map((c) => (
+                <button type="button" key={c} onClick={() => set("avatar_color", c)} aria-label={c}
+                  className={`h-8 w-8 rounded-full border-4 ${f.avatar_color === c ? "border-crystal" : "border-white"}`} style={{ background: c }} />
+              ))}
             </div>
           </div>
         )}

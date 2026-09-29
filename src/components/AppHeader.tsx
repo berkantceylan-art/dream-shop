@@ -8,6 +8,8 @@ const NAV = [
   { href: "/sehir", label: "Şehir", icon: "🏙️" },
   { href: "/pazar", label: "Pazar", icon: "🤝" },
   { href: "/envanter", label: "Eşyalarım", icon: "🎒" },
+  { href: "/evim", label: "Evim", icon: "🏡" },
+  { href: "/garaj", label: "Garaj", icon: "🚗" },
   { href: "/karakter", label: "Karakter", icon: "🧍" },
 ];
 
