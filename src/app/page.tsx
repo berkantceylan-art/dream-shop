@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import SkyScene from "@/components/SkyScene";
+import { CitySceneLazy } from "@/components/3d/Lazy";
 import Crystal from "@/components/Crystal";
 
 export default async function Home() {
@@ -10,8 +10,10 @@ export default async function Home() {
   if (user) redirect("/hesap");
 
   return (
-    <SkyScene>
-      <main className="flex min-h-screen flex-col items-center justify-center p-6 pb-72 text-center">
+    <div className="relative min-h-screen overflow-hidden">
+      <CitySceneLazy className="absolute inset-0" />
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center p-6 text-center">
+        <div className="game-panel flex flex-col items-center px-8 py-10">
         <Crystal size={64} className="animate-bob animate-glow" />
         <h1 className="mt-4 font-display text-6xl font-bold text-ink drop-shadow-[0_4px_0_#ffffffaa] sm:text-7xl">
           Dream Shop
@@ -26,7 +28,8 @@ export default async function Home() {
         <p className="mt-6 inline-flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 font-bold">
           <Crystal size={16} /> Üye olana 1000 kredi hediye
         </p>
+        </div>
       </main>
-    </SkyScene>
+    </div>
   );
 }

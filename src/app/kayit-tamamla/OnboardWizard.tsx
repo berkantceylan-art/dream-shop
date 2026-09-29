@@ -40,7 +40,7 @@ export default function OnboardWizard({ cities, username }: { cities: City[]; us
     });
   }
 
-  if (step === 3) return <Reward onDone={() => router.push("/hesap")} />;
+  if (step === 3) return <Reward onDone={() => router.push("/karakter")} />;
 
   return (
     <div className="game-panel animate-pop w-full max-w-md p-8">
