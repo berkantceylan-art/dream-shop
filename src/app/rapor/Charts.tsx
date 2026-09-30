@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { TURKEY_PATHS, TURKEY_VIEWBOX } from "@/lib/turkeyMap";
+
 
 // Tek tonlu (mor) grafik bileşenleri. Kimlik renkle değil etiketle taşınır.
 export const HUE = "#9b3fd9";
@@ -108,6 +110,36 @@ export function Kpi({ label, value, sub }: { label: string; value: string | numb
       <p className="text-xs font-bold uppercase tracking-wide text-ink/50">{label}</p>
       <p className="font-display text-3xl font-bold">{value == null ? <span className="text-ink/30">&lt;10</span> : typeof value === "number" ? fmt(value) : value}</p>
       {sub && <p className="text-xs font-semibold text-ink/50">{sub}</p>}
+    </div>
+  );
+}
+
+/** İl bazında tek tonlu ısı haritası (choropleth) */
+export function TurkeyMap({ values, names, unit = "kişi" }: { values: Record<number, number>; names: Record<number, string>; unit?: string }) {
+  const [hover, setHover] = useState<number | null>(null);
+  const max = Math.max(1, ...Object.values(values));
+  return (
+    <div className="relative">
+      <svg viewBox={TURKEY_VIEWBOX} className="w-full" role="img" aria-label="Türkiye il haritası">
+        {Object.entries(TURKEY_PATHS).map(([plate, d]) => {
+          const v = values[Number(plate)];
+          return (
+            <path key={plate} d={d} stroke="#fff" strokeWidth={1.2}
+              fill={v == null ? "#ece8f3" : HUE} fillOpacity={v == null ? 1 : 0.18 + 0.82 * (v / max)}
+              className="cursor-pointer transition-[fill-opacity] hover:brightness-110"
+              onMouseEnter={() => setHover(Number(plate))} onMouseLeave={() => setHover(null)} />
+          );
+        })}
+      </svg>
+      {hover != null && (
+        <div className="pointer-events-none absolute left-3 top-3 rounded-xl bg-ink px-3 py-1.5 text-sm font-bold text-white">
+          {names[hover] ?? hover}: {values[hover] == null ? "<10 kişi (gizli)" : `${Number(values[hover]).toLocaleString("tr-TR")} ${unit}`}
+        </div>
+      )}
+      <div className="mt-2 flex items-center gap-2 text-xs font-bold text-ink/50">
+        <span>Az</span><span className="h-3 w-28 rounded" style={{ background: `linear-gradient(90deg, ${HUE}2e, ${HUE})` }} /><span>Çok</span>
+        <span className="ml-4 inline-block h-3 w-3 rounded bg-[#ece8f3]" /> veri yok / &lt;10 kişi
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { supabase, me } = await requireAdmin();
   const { data } = await supabase.rpc("admin_stats");
   const s = (data ?? {}) as Record<string, number>;
+  const { count: surveysPending } = await supabase.from("surveys").select("id", { count: "exact", head: true }).eq("status", "pending");
   const groups = [
     { title: "Genel", items: [
       { href: "/admin", label: "Genel bakış", icon: "📊" },
@@ -16,6 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       { href: "/admin/destek", label: "Destek", icon: "🛟", badge: s.tickets_open },
       { href: "/admin/sikayetler", label: "Şikâyetler", icon: "🚩", badge: s.reports_open },
       { href: "/admin/veri", label: "Veri alıcıları", icon: "📈", badge: s.buyers_pending },
+      { href: "/admin/anketler", label: "Sponsorlu anketler", icon: "📋", badge: surveysPending ?? 0 },
     ] },
     { title: "Katalog", items: [
       { href: "/admin/urunler", label: "Ürünler", icon: "📦" },

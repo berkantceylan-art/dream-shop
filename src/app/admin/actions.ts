@@ -204,3 +204,11 @@ export async function updateBuyerPlan(f: FormData) {
   }).eq("id", id);
   revalidatePath("/admin/veri");
 }
+
+export async function setSurveyStatus(f: FormData) {
+  const supabase = await createClient();
+  const status = String(f.get("status"));
+  if (!["active", "rejected", "closed"].includes(status)) return;
+  await supabase.from("surveys").update({ status }).eq("id", Number(f.get("id")));
+  revalidatePath("/admin/anketler");
+}

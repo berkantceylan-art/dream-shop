@@ -1,7 +1,8 @@
 "use client";
-import { useState, useTransition } from "react";
-import { runReport, type Filters, type ReportKind } from "./actions";
-import { BarList, Heatmap, Kpi, LineChart, HUE } from "./Charts";
+import { useEffect, useState, useTransition } from "react";
+import { runReport, listSavedAction, saveReportAction, deleteSavedAction, type Filters, type ReportKind } from "./actions";
+import { BarList, Heatmap, Kpi, LineChart, TurkeyMap, HUE } from "./Charts";
+import SurveyManager from "./SurveyManager";
 
 type Opt = { id: number | string; name: string };
 type Account = { admin?: boolean; company?: string; plan?: string | null; plan_until?: string | null; quota?: number | null; used?: number; credits?: number; reports: string[] } | null;
@@ -16,7 +17,15 @@ const REPORTS: { id: ReportKind; icon: string; title: string; desc: string; prod
   { id: "time", icon: "⏰", title: "Zaman analizi", desc: "Günlük trend ve gün × saat yoğunluğu", product: "optional" },
   { id: "interest", icon: "🛍️", title: "İlgi kırılımı", desc: "Etkileşimleri istediğin boyuta göre kır", product: "optional" },
   { id: "profile", icon: "🧬", title: "Profil dağılımı", desc: "Segmentin demografik ve beden dağılımı", product: "none" },
+  { id: "geo", icon: "🗺️", title: "Türkiye haritası", desc: "İl bazında ilgi ve pazar penetrasyonu", product: "optional" },
+  { id: "basket", icon: "🧺", title: "Birlikte ilgi (sepet)", desc: "Bu ürünle ilgilenenler başka neye bakıyor? Çapraz satış fırsatları", product: "optional" },
+  { id: "reasons", icon: "🤔", title: "Neden almadı?", desc: "İstek listesine ekleyip almayanların beyan ettiği nedenler", product: "optional" },
+  { id: "survey", icon: "📋", title: "Sponsorlu anket", desc: "Hedef kitlene soru sor, ödüllü yanıt topla", product: "none" },
 ];
+const SEGMENT_KEYS = ["city_id", "age_min", "age_max", "gender"] as const;
+const NO_COMPARE: ReportKind[] = ["price", "basket", "survey", "brand"];
+export const REASON_TR: Record<string, string> = { pahali: "Fiyatı yüksek", renk: "Rengi uymadı", beden: "Bedeni yok/uymadı", model: "Modeli beğenmedim",
+  baska_marka: "Başka marka aldım", ihtiyac_yok: "İhtiyacım kalmadı", sonra: "Sonra alacağım", diger: "Diğer" };
 const DIM_TR: Record<string, string> = { age: "Yaş", gender: "Cinsiyet", city: "Şehir", income: "Gelir", occupation: "Meslek", education: "Eğitim",
   marital: "Medeni durum", housing: "Konut", car: "Araba sahipliği", interest: "İlgi alanları", top: "Üst beden", bottom: "Alt beden (bel)", shoe: "Ayakkabı no", height: "Boy" };
 const LBL: Record<string, string> = { clothing: "Giyim", accessory: "Aksesuar", car: "Otomobil", house: "Konut", furniture: "Mobilya", other: "Diğer",
@@ -40,7 +49,15 @@ export default function ReportApp({ cities, categories, brands, products, initia
   const [err, setErr] = useState("");
   const [account, setAccount] = useState<Account>(initialAccount);
   const [pending, start] = useTransition();
+  const [cmp, setCmp] = useState(false);
+  const [f2, setF2] = useState<Filters>({});
+  const [data2, setData2] = useState<unknown>(null);
+  const [saved, setSaved] = useState<Awaited<ReturnType<typeof listSavedAction>>>([]);
+  useEffect(() => { listSavedAction().then(setSaved); }, []);
   const set = (k: string, v: string) => setF((s) => ({ ...s, [k]: v }));
+  const set2 = (k: string, v: string) => setF2((s) => ({ ...s, [k]: v }));
+  const canCmp = !NO_COMPARE.includes(kind);
+  const comparing = cmp && canCmp;
   const meta = REPORTS.find((r) => r.id === kind)!;
   const allowed = (id: string) => account?.admin || account?.reports.includes(id) || (account?.credits ?? 0) > 0;
 
@@ -49,8 +66,29 @@ export default function ReportApp({ cities, categories, brands, products, initia
     const g = kind === "funnel" ? (f.group_by && ["product", "brand", "category", "kind", "total"].includes(String(f.group_by)) ? f.group_by : "product") : f.group_by;
     const r = await runReport(kind, { ...f, group_by: g });
     if (r.account) setAccount(r.account as Account);
-    if (r.error) { setErr(r.error); setData(null); } else setData(r.data);
+    if (r.error) { setErr(r.error); setData(null); setData2(null); return; }
+    setData(r.data);
+    if (comparing) {
+      const base = Object.fromEntries(Object.entries(f).filter(([k]) => !(SEGMENT_KEYS as readonly string[]).includes(k)));
+      const r2 = await runReport(kind, { ...base, ...f2, group_by: g });
+      if (r2.account) setAccount(r2.account as Account);
+      if (r2.error) { setErr("B segmenti: " + r2.error); setData2(null); } else setData2(r2.data);
+    } else setData2(null);
   });
+  const save = () => start(async () => {
+    const name = window.prompt("Rapor adı", `${meta.title} · ${new Date().toLocaleDateString("tr-TR")}`);
+    if (!name) return;
+    await saveReportAction(name, kind, comparing ? { ...f, __cmp: JSON.stringify(f2) } : f);
+    setSaved(await listSavedAction());
+  });
+  const load = (r: (typeof saved)[number]) => {
+    const { __cmp, ...rest } = r.filters;
+    setKind(r.kind); setF({ group_by: "kind", field: "shoe_size", ...rest }); setData(null); setData2(null); setErr("");
+    if (__cmp) { setCmp(true); setF2(JSON.parse(String(__cmp))); } else setCmp(false);
+  };
+  const remove = (id: number) => start(async () => { await deleteSavedAction(id); setSaved((s) => s.filter((x) => x.id !== id)); });
+  const segLabel = (x: Filters) => [x.city_id ? cities.find((c) => String(c.id) === String(x.city_id))?.name : "Tüm Türkiye",
+    x.age_min || x.age_max ? `${x.age_min || 18}–${x.age_max || "99"} yaş` : null, x.gender ? L(String(x.gender)) : null].filter(Boolean).join(" · ");
 
   const exportCsv = () => {
     const rows = toRows(kind, data);
@@ -85,18 +123,31 @@ export default function ReportApp({ cities, categories, brands, products, initia
           {REPORTS.map((r) => {
             const ok = allowed(r.id);
             return (
-              <button key={r.id} onClick={() => { setKind(r.id); setData(null); setErr(""); }}
+              <button key={r.id} onClick={() => { setKind(r.id); setData(null); setData2(null); setErr(""); }}
                 className={`flex items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm font-bold ${kind === r.id ? "bg-crystal text-white" : "hover:bg-white"} ${ok ? "" : "opacity-60"}`}>
                 <span>{r.icon}</span><span className="flex-1">{r.title}</span>{!ok && <span title="Paketinde yok">🔒</span>}
               </button>
             );
           })}
         </nav>
+        <div className="game-panel no-print !rounded-3xl p-3">
+          <p className="mb-1 px-1 text-xs font-bold uppercase tracking-wide text-ink/50">⭐ Kayıtlı raporlar</p>
+          {!saved.length && <p className="px-1 text-xs font-semibold text-ink/40">Filtreleri kurup “Kaydet”e bas; tek tıkla tekrar çalıştır.</p>}
+          {saved.map((r) => (
+            <div key={r.id} className="group flex items-center gap-1 rounded-xl px-1 hover:bg-white">
+              <button onClick={() => load(r)} className="min-w-0 flex-1 truncate py-1.5 text-left text-sm font-bold" title={r.name}>
+                {REPORTS.find((x) => x.id === r.kind)?.icon} {r.name}
+              </button>
+              <button onClick={() => remove(r.id)} className="text-xs text-ink/30 hover:text-red-500" aria-label="Sil">✕</button>
+            </div>
+          ))}
+        </div>
       </aside>
 
       <section className="flex min-w-0 flex-col gap-4">
+        {kind === "survey" ? <SurveyManager cities={cities} allowed={!!(account?.admin || account?.reports.includes("survey"))} /> : <>
         {/* Segment ve filtreler */}
-        <div className="game-panel !rounded-3xl p-4">
+        <div className="game-panel no-print !rounded-3xl p-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div><h2 className="font-display text-2xl font-bold">{meta.icon} {meta.title}</h2><p className="text-sm font-semibold text-ink/60">{meta.desc}</p></div>
             {!allowed(kind) && <span className="rounded-full bg-gold/30 px-3 py-1 text-sm font-bold">🔒 Paketinde yok — Pro'ya geç veya rapor kredisi kullan</span>}
@@ -128,10 +179,32 @@ export default function ReportApp({ cities, categories, brands, products, initia
               <Sel label="Etkileşim" v={f.event} on={(v) => set("event", v)} opts={[["", "Hepsi"], ["view", "Görüntüleme"], ["wishlist", "İstek listesi"], ["price_wish", "Fiyat teklifi"], ["purchase", "Satın alma"], ["resale", "2. el"]]} />
             )}
             {kind === "profile" && <Sel label="Alan" v={f.field} on={(v) => set("field", v)} opts={PFIELDS} />}
+            {kind === "reasons" && <Sel label="Kırılım" v={f.group_by} on={(v) => set("group_by", v)} opts={[["total", "Toplam"], ["product", "Ürün"], ["brand", "Marka"]]} />}
           </div>
+          {canCmp && (
+            <div className="mt-3 rounded-2xl border-2 border-dashed border-[#e0d4f2] p-3">
+              <label className="flex items-center gap-2 text-sm font-bold">
+                <input type="checkbox" checked={cmp} onChange={(e) => { setCmp(e.target.checked); setData2(null); }} className="h-4 w-4 accent-[#9b3fd9]" />
+                🆚 A/B segment karşılaştırması
+                <span className="font-semibold text-ink/50">— yukarıdaki A segmentini ikinci bir kitleyle yan yana gör</span>
+              </label>
+              {cmp && (
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  <Sel label="B · Şehir" v={f2.city_id} on={(v) => set2("city_id", v)} opts={[["", "Tüm Türkiye"], ...cities.map((c) => [String(c.id), c.name])]} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Num label="B · Yaş min" v={f2.age_min} on={(v) => set2("age_min", v)} />
+                    <Num label="B · Yaş max" v={f2.age_max} on={(v) => set2("age_max", v)} />
+                  </div>
+                  <Sel label="B · Cinsiyet" v={f2.gender} on={(v) => set2("gender", v)} opts={[["", "Hepsi"], ["kadin", "Kadın"], ["erkek", "Erkek"], ["diger", "Diğer"]]} />
+                </div>
+              )}
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button className="game-btn" onClick={run} disabled={pending || !allowed(kind)}>{pending ? "Hesaplanıyor…" : "Raporu oluştur"}</button>
             <button className="game-btn ghost" onClick={exportCsv} disabled={!data}>⬇️ Excel'e aktar (CSV)</button>
+            <button className="game-btn ghost" onClick={() => window.print()} disabled={!data}>🖨️ PDF</button>
+            <button className="game-btn ghost" onClick={save} disabled={pending}>⭐ Kaydet</button>
             <span className="text-xs font-semibold text-ink/50">🔒 Yalnızca analiz izni veren kullanıcılar · 10 kişiden küçük gruplar gösterilmez</span>
           </div>
         </div>
@@ -142,7 +215,24 @@ export default function ReportApp({ cities, categories, brands, products, initia
             <div><p className="text-6xl">{meta.icon}</p><p className="mt-2 font-display text-xl font-bold">Filtreleri seç ve raporu oluştur</p></div>
           </div>
         )}
-        {data != null && <Result kind={kind} data={data} />}
+        {data != null && (
+          <div className="print-only hidden">
+            <p className="font-display text-2xl font-bold">Dream Shop · {meta.title}</p>
+            <p className="text-sm">{account?.company ?? ""} · {new Date().toLocaleString("tr-TR")} · Segment: {segLabel(f)}{comparing ? ` vs ${segLabel(f2)}` : ""} · Anonim, toplu veri (k≥10)</p>
+          </div>
+        )}
+        {data != null && !comparing && <Result kind={kind} data={data} />}
+        {data != null && comparing && (
+          <div className="grid gap-4 2xl:grid-cols-2">
+            {[[data, f, "A"], [data2, f2, "B"]].map(([d, fx, tag]) => (
+              <div key={tag as string} className="flex min-w-0 flex-col gap-4 rounded-3xl p-2" style={{ background: tag === "A" ? "#f6f0fd" : "#eef3fb" }}>
+                <p className="px-2 pt-1 font-display text-lg font-bold"><span className="mr-2 rounded-full bg-ink px-2.5 py-0.5 text-sm text-white">{tag as string}</span>{segLabel(fx as Filters)}</p>
+                {d != null ? <Result kind={kind} data={d} /> : <p className="p-4 text-sm font-semibold text-ink/50">Veri yok</p>}
+              </div>
+            ))}
+          </div>
+        )}
+        </>}
       </section>
     </div>
   );
@@ -348,10 +438,87 @@ export function Result({ kind, data }: { kind: ReportKind; data: unknown }) {
     );
   }
 
+  if (kind === "geo") return <GeoResult rows={data as GeoRow[]} />;
+
+  if (kind === "basket") {
+    const rows = data as { product_a: string; product_b: string; pair_users: number; users_a: number; confidence: number; lift: number }[];
+    if (!rows?.length) return <Card><Empty /><p className="mt-2 text-sm text-ink/60">İpucu: Aynı iki ürünle ilgilenen en az 10 kişi gerekir.</p></Card>;
+    return (
+      <Card title="🧺 Birlikte ilgi gören ürün çiftleri">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead><tr className="text-left text-xs uppercase tracking-wide text-ink/50">
+              <th className="py-2">Bununla ilgilenen…</th><th>…buna da bakıyor</th><th className="pr-3 text-right">Ortak kişi</th><th className="w-44 pl-3">Olasılık</th><th className="text-right" title="1'den büyükse tesadüften güçlü ilişki">Lift</th>
+            </tr></thead>
+            <tbody className="divide-y divide-[#eee8f6]">
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  <td className="py-2 pr-2 font-bold">{r.product_a}</td>
+                  <td className="pr-2 font-semibold">{r.product_b}</td>
+                  <td className="pr-3 text-right font-bold">{fmt(r.pair_users)}</td>
+                  <td className="pl-3">
+                    <div className="flex items-center gap-2"><div className="h-2 flex-1 rounded-full bg-[#f1ecf8]"><div className="h-full rounded-full" style={{ width: `${Math.min(100, Number(r.confidence) * 100)}%`, background: HUE }} /></div>
+                      <span className="w-10 text-right text-xs font-bold">%{Math.round(Number(r.confidence) * 100)}</span></div>
+                  </td>
+                  <td className={`text-right font-bold ${Number(r.lift) >= 1.5 ? "text-[#16865a]" : ""}`}>{Number(r.lift).toFixed(1)}×</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-xs font-semibold text-ink/50">Olasılık: A ile ilgilenenlerin yüzde kaçı B ile de ilgilendi. Lift &gt; 1,5 = güçlü çapraz satış / paket kampanya fırsatı.</p>
+      </Card>
+    );
+  }
+
+  if (kind === "reasons") {
+    const rows = data as { label: string; reason: string; users: number }[];
+    if (!rows?.length) return <Card><Empty /><p className="mt-2 text-sm text-ink/60">Kullanıcılar, istek listesine ekleyip 3 gün içinde almadıkları ürünler için profillerinde bu soruyu yanıtlar.</p></Card>;
+    const groups = [...new Set(rows.map((r) => r.label))];
+    return (
+      <div className={`grid gap-4 ${groups.length > 1 ? "md:grid-cols-2" : ""}`}>
+        {groups.map((g) => {
+          const gr = rows.filter((r) => r.label === g);
+          const tot = gr.reduce((a, r) => a + Number(r.users), 0);
+          return <Card key={g} title={g}><BarList rows={gr.map((r) => ({ label: REASON_TR[r.reason] ?? r.reason, value: Number(r.users) }))} /><p className="mt-2 text-xs font-semibold text-ink/50">{fmt(tot)} yanıt</p></Card>;
+        })}
+      </div>
+    );
+  }
+
   // interest & profile
   const rows = data as { label: string; users: number; events?: number }[];
   if (!rows?.length) return <Card><Empty /></Card>;
   return <Card><BarList rows={rows.map((r) => ({ label: L(r.label), value: Number(r.users), sub: r.events != null ? `${fmt(r.events)} etkileşim` : undefined }))} /></Card>;
+}
+
+type GeoRow = { city_id: number; city: string; users: number | null; events: number | null; segment: number | null };
+function GeoResult({ rows }: { rows: GeoRow[] }) {
+  const [mode, setMode] = useState<"users" | "pen">("users");
+  if (!rows?.length) return <Card><Empty /></Card>;
+  const val = (r: GeoRow) => (mode === "users" ? r.users : r.users != null && r.segment ? Math.round((r.users / r.segment) * 1000) / 10 : null);
+  const values: Record<number, number> = {};
+  const names: Record<number, string> = {};
+  rows.forEach((r) => { names[r.city_id] = r.city; const v = val(r); if (v != null) values[r.city_id] = v; });
+  const top = rows.filter((r) => val(r) != null).sort((a, b) => (val(b) ?? 0) - (val(a) ?? 0)).slice(0, 12);
+  return (
+    <>
+      <Card>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="font-display text-lg font-bold">🗺️ {mode === "users" ? "İlgilenen kişi sayısı" : "Penetrasyon: il nüfusumuzun yüzde kaçı ilgilendi"}</h3>
+          <div className="no-print flex gap-1 rounded-full bg-[#f1ecf8] p-1 text-sm font-bold">
+            {([["users", "Kişi"], ["pen", "Penetrasyon %"]] as const).map(([k, l]) => (
+              <button key={k} onClick={() => setMode(k)} className={`rounded-full px-3 py-1 ${mode === k ? "bg-white shadow" : "text-ink/60"}`}>{l}</button>
+            ))}
+          </div>
+        </div>
+        <TurkeyMap values={values} names={names} unit={mode === "users" ? "kişi" : "%"} />
+      </Card>
+      <Card title={mode === "users" ? "🏆 En çok ilgi gösteren iller" : "🏆 En yüksek penetrasyon"}>
+        <BarList suffix={mode === "users" ? "kişi" : "%"} rows={top.map((r) => ({ label: r.city, value: val(r), sub: `${fmt(r.segment)} kullanıcıdan` }))} />
+      </Card>
+    </>
+  );
 }
 
 // ------------------------------------------------------------------ Dışa aktarma
@@ -376,6 +543,7 @@ function toRows(kind: ReportKind, data: unknown): Any[] {
     return [...Object.entries(d.sizes ?? {}).flatMap(([k, rows]) => rows.map((r) => ({ boyut: DIM_TR[k] ?? k, deger: r.label, kisi: r.users }))),
       ...(d.colors ?? []).map((c) => ({ boyut: "Renk", deger: c.color, kisi: c.users }))];
   }
+  if (kind === "reasons") return (data as Any[]).map((r) => ({ grup: r.label, neden: REASON_TR[String(r.reason)] ?? r.reason, kisi: r.users }));
   if (kind === "time") {
     const d = data as { daily: Any[]; heat: Any[] };
     return [...d.daily.map((x) => ({ tur: "gunluk", ...x })), ...d.heat.map((x) => ({ tur: "gun_saat", ...x }))];

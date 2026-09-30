@@ -80,3 +80,13 @@ body {
   padding: .45rem .9rem; font-weight: 700; font-size: .9rem; transition: all .15s;
 }
 .chip[data-on="true"] { background: var(--color-crystal); border-color: var(--color-crystal); color: #fff }
+
+/* Rapor PDF çıktısı */
+@media print {
+  header, aside, nav, .no-print { display: none !important; }
+  .print-only { display: block !important; margin-bottom: 12px; }
+  body { background: #fff !important; }
+  .game-panel { box-shadow: none !important; border: 1px solid #e5e0ee !important; break-inside: avoid; }
+  main, section { max-width: none !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

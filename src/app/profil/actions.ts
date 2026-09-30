@@ -78,3 +78,19 @@ export async function setConsentAction(type: "aggregate_analytics" | "marketing"
   await supabase.from("consents").insert({ user_id: user.id, type, granted, version: CONSENT_VERSION });
   revalidatePath("/profil");
 }
+
+export async function answerFeedbackAction(productId: string, reason: string): Promise<{ error?: string; reward?: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("answer_feedback", { p_product: productId, p_reason: reason });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { reward: Number(data) };
+}
+
+export async function answerSurveyAction(surveyId: number, option: number): Promise<{ error?: string; reward?: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("answer_survey", { p_survey: surveyId, p_option: option });
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return { reward: Number(data) };
+}

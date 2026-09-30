@@ -8,6 +8,7 @@ import Credits from "@/components/Credits";
 import Crystal from "@/components/Crystal";
 import { ProductThumb } from "@/components/ProductCard";
 import { AvatarStageLazy } from "@/components/3d/Lazy";
+import QuestionsCard from "@/components/QuestionsCard";
 import { ConsentToggle, CreateGiftForm, ProfileForm, RedeemGiftForm, SendCreditsForm, TicketForm } from "./Forms";
 
 const TABS = [
@@ -29,7 +30,7 @@ const TX: Record<string, { label: string; icon: string }> = {
   gift: { label: "Hediye kredi", icon: "🎁" }, admin_adjust: { label: "Düzeltme", icon: "🛠️" }, refund: { label: "İade", icon: "↩️" },
   quest_reward: { label: "Görev ödülü", icon: "🎯" }, gift_card_create: { label: "Hediye çeki oluşturma", icon: "🎟️" },
   gift_card_redeem: { label: "Hediye çeki kullanımı", icon: "🎟️" },
-  resale_fee: { label: "Pazar komisyonu", icon: "🏷️" }, quick_sell: { label: "Hızlı satış", icon: "⚡" },
+  resale_fee: { label: "Pazar komisyonu", icon: "🏷️" }, survey_reward: { label: "Anket ödülü", icon: "📋" }, quick_sell: { label: "Hızlı satış", icon: "⚡" },
 };
 const TICKET_STATUS: Record<string, string> = { open: "🟡 Açık", answered: "🟢 Yanıtlandı", closed: "⚪ Kapandı" };
 const fmtDate = (d: string) => new Date(d).toLocaleString("tr-TR", { dateStyle: "medium", timeStyle: "short" });
@@ -50,6 +51,7 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
     ]);
     const done = new Set((claims ?? []).map((c) => c.quest_id));
     const open = (quests ?? []).filter((q) => !done.has(q.id));
+    const [{ data: fbq }, { data: surveys }] = await Promise.all([supabase.rpc("my_feedback_questions"), supabase.rpc("my_open_surveys")]);
     const totalSpent = (spent ?? []).reduce((a, b) => a + Number(b.amount), 0);
     body = (
       <>
@@ -74,6 +76,8 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
             </div>
           </div>
         </div>
+        <QuestionsCard questions={(fbq ?? []) as { product_id: string; name: string; brand: string | null }[]}
+          surveys={((surveys ?? []) as { id: number; question: string; options: string[]; reward: number }[]).map((x) => ({ ...x, reward: Number(x.reward) }))} />
         {open.length > 0 && (
           <section className="mt-6">
             <h2 className="mb-3 font-display text-2xl font-bold">🎯 Görevler</h2>
