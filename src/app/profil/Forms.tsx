@@ -1,5 +1,6 @@
 "use client";
 import { useActionState, useState, useTransition } from "react";
+import { COVERS } from "@/lib/posts";
 import {
   createGiftAction, createTicketAction, redeemGiftAction, sendCreditsAction, setConsentAction, updateProfileAction,
   type FormState,
@@ -98,10 +99,11 @@ type City = { id: number; name: string };
 export function ProfileForm({ cities, districts, initial }: {
   cities: City[]; districts: { city_id: number; name: string }[];
   initial: { display_name: string | null; city_id: number | null; district: string | null;
-    bio?: string | null; dm_policy?: string; home_visibility?: string };
+    bio?: string | null; dm_policy?: string; home_visibility?: string; cover_color?: string; share_activity?: boolean };
 }) {
   const [s, action, pending] = useActionState<FormState, FormData>(updateProfileAction, {});
   const [city, setCity] = useState(initial.city_id ?? 34);
+  const [cover, setCover] = useState(initial.cover_color ?? "crystal");
   return (
     <form action={action} className="flex flex-col gap-3">
       <input name="display_name" className="game-input" placeholder="Görünen ad" defaultValue={initial.display_name ?? ""} />
@@ -127,6 +129,20 @@ export function ProfileForm({ cities, districts, initial }: {
           </select>
         </label>
       </div>
+      <div>
+        <p className="mb-1 text-sm font-bold">🎨 Profil kapağı</p>
+        <input type="hidden" name="cover_color" value={cover} />
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(COVERS).map(([k, v]) => (
+            <button type="button" key={k} onClick={() => setCover(k)} aria-label={k}
+              className={`h-10 w-16 rounded-xl bg-gradient-to-br ${v} ${cover === k ? "ring-4 ring-crystal ring-offset-2" : ""}`} />
+          ))}
+        </div>
+      </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="share_activity" defaultChecked={initial.share_activity} className="mt-0.5 h-5 w-5 accent-[#c24dff]" />
+        <span><b>Yeni ev veya araba aldığımda otomatik paylaş</b><br /><span className="text-ink/60">Takipçilerin akışında “Yeni arabamı aldım!” gibi bir gönderi çıkar.</span></span>
+      </label>
       <Msg s={s} />
       <button className="game-btn" disabled={pending}>{pending ? "Kaydediliyor…" : "Kaydet"}</button>
     </form>

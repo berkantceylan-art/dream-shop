@@ -265,7 +265,7 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
 
   if (tab === "ayarlar") {
     const [{ data: p }, { data: cities }, { data: districts }, { data: consents }] = await Promise.all([
-      supabase.from("profiles").select("display_name, city_id, district, bio, dm_policy, home_visibility").eq("id", me.id).single(),
+      supabase.from("profiles").select("display_name, city_id, district, bio, dm_policy, home_visibility, cover_color, share_activity").eq("id", me.id).single(),
       supabase.from("cities").select("id, name"),
       supabase.from("districts").select("city_id, name").order("name").limit(2000),
       supabase.from("consents").select("type, granted, created_at").eq("user_id", me.id).order("created_at", { ascending: false }),

@@ -4,9 +4,10 @@ export type PublicProfile = {
   id: string; username: string; display_name: string | null; city_id: number | null; bio: string | null;
   dm_policy: "everyone" | "followers" | "none"; home_visibility: "everyone" | "followers" | "none";
   home_item_id: string | null; car_item_id: string | null; created_at: string; role: string;
+  cover_color: string; pinned_post_id: number | null;
 };
 
-export const PUBLIC_COLS = "id, username, display_name, city_id, bio, dm_policy, home_visibility, home_item_id, car_item_id, created_at, role";
+export const PUBLIC_COLS = "id, username, display_name, city_id, bio, dm_policy, home_visibility, home_item_id, car_item_id, created_at, role, cover_color, pinned_post_id";
 
 export async function getPublicProfile(supabase: SupabaseClient, username: string) {
   const { data } = await supabase.from("public_profiles").select(PUBLIC_COLS).eq("username", username.toLowerCase()).maybeSingle();

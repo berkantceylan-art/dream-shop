@@ -63,6 +63,8 @@ export async function updateProfileAction(_: FormState, f: FormData): Promise<Fo
     bio: String(f.get("bio") || "").trim().slice(0, 300) || null,
     dm_policy: ["everyone", "followers", "none"].includes(String(f.get("dm_policy"))) ? String(f.get("dm_policy")) : "everyone",
     home_visibility: ["everyone", "followers", "none"].includes(String(f.get("home_visibility"))) ? String(f.get("home_visibility")) : "everyone",
+    cover_color: String(f.get("cover_color") || "crystal"),
+    share_activity: f.get("share_activity") === "on",
   }).eq("id", user.id);
   if (error) return { error: error.message };
   revalidatePath("/", "layout");
