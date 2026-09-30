@@ -26,3 +26,16 @@ export async function toggleWishlist(productId: string, on: boolean) {
     await supabase.from("wishlist").delete().eq("user_id", user.id).eq("product_id", productId);
   }
 }
+
+export async function setPriceWishAction(productId: string, price: number, notify: boolean): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_price_wish", { p_product: productId, p_price: Math.round(price), p_notify: notify });
+  return error ? { error: error.message } : {};
+}
+
+export async function removePriceWishAction(productId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) await supabase.from("price_wishes").delete().eq("user_id", user.id).eq("product_id", productId);
+  revalidatePath("/profil");
+}

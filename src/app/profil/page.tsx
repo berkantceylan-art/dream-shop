@@ -13,6 +13,7 @@ import { ConsentToggle, CreateGiftForm, ProfileForm, RedeemGiftForm, SendCredits
 const TABS = [
   { id: "genel", label: "Profilim", icon: "🏠" },
   { id: "siparisler", label: "Siparişlerim", icon: "🧾" },
+  { id: "teklifler", label: "Fiyat tekliflerim", icon: "💰" },
   { id: "cuzdan", label: "Cüzdan", icon: "💎" },
   { id: "gonder", label: "Kredi gönder", icon: "🎁" },
   { id: "hediye", label: "Hediye çekleri", icon: "🎟️" },
@@ -117,6 +118,37 @@ export default async function ProfilPage({ searchParams }: { searchParams: Promi
                 <Credits amount={r.paid_credits} />
               </div>
             ))}
+          </div>
+        )}
+      </Panel>
+    );
+  }
+
+  if (tab === "teklifler") {
+    const { data: wishes } = await supabase.from("price_wishes")
+      .select("product_id, price, notify, notified_at, updated_at, products(id, name, brand, kind, thumbnail_url, attributes, credit_price, status)")
+      .eq("user_id", me.id).order("updated_at", { ascending: false });
+    const rows = (wishes ?? []) as unknown as { product_id: string; price: number; notify: boolean; notified_at: string | null;
+      products: (Product & { status: string }) | null }[];
+    body = (
+      <Panel title="💰 Fiyat tekliflerim ve alarmlarım">
+        <p className="mb-4 text-sm font-semibold text-ink/60">Mağazalarda “Bu fiyata olsa alırım” dediğin ürünler. Fiyat teklifine inince 🔔 bildirim alırsın.</p>
+        {!rows.length ? <EmptyRow text="Henüz fiyat teklifin yok." cta={{ href: "/sehir", label: "Mağazaları gez 🛍️" }} /> : (
+          <div className="divide-y divide-[#e6ecf7]">
+            {rows.filter((r) => r.products).map((r) => {
+              const p = r.products!; const reached = p.credit_price <= r.price;
+              return (
+                <div key={r.product_id} className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="w-14 shrink-0"><ProductThumb p={p} className="!rounded-xl !text-2xl" /></div>
+                  <div className="min-w-40 flex-1">
+                    <p className="font-bold">{p.name}</p>
+                    <p className="text-xs font-semibold text-ink/50">Şu anki fiyat: {p.credit_price.toLocaleString("tr-TR")} · Teklifin: <b>{Number(r.price).toLocaleString("tr-TR")}</b></p>
+                  </div>
+                  {reached ? <span className="rounded-full bg-mint/20 px-3 py-1 text-xs font-bold text-[#16865a]">🎉 Fiyat teklifine indi!</span>
+                    : <span className="text-xs font-bold text-ink/50">{r.notify ? "🔔 Alarm açık" : "Alarm kapalı"} · %{Math.round((1 - r.price / p.credit_price) * 100)} daha düşmeli</span>}
+                </div>
+              );
+            })}
           </div>
         )}
       </Panel>

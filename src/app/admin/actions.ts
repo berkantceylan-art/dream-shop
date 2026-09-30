@@ -191,3 +191,16 @@ export async function savePackage(f: FormData) {
   if (id) await supabase.from("credit_packages").update(row).eq("id", id); else await supabase.from("credit_packages").insert(row);
   revalidatePath("/admin/ayarlar");
 }
+
+export async function updateBuyerPlan(f: FormData) {
+  const supabase = await createClient();
+  const id = String(f.get("id"));
+  const add = Number(f.get("add_credits") || 0);
+  const { data: b } = await supabase.from("data_buyers").select("report_credits").eq("id", id).single();
+  await supabase.from("data_buyers").update({
+    plan_id: String(f.get("plan_id") || "") || null,
+    plan_until: String(f.get("plan_until") || "") || null,
+    report_credits: Math.max(0, Number(b?.report_credits ?? 0) + add),
+  }).eq("id", id);
+  revalidatePath("/admin/veri");
+}

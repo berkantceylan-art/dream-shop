@@ -7,8 +7,11 @@ import ProductCard, { ProductThumb } from "@/components/ProductCard";
 import Credits from "@/components/Credits";
 import Crystal from "@/components/Crystal";
 import { buyProduct, toggleWishlist, viewProduct } from "./actions";
+import PriceWish from "@/components/PriceWish";
 
-export default function Shop({ products, wished, balance }: { products: Product[]; wished: string[]; balance: number }) {
+type Wish = { price: number; notify: boolean };
+export default function Shop({ products, wished, balance, priceWishes = {} }: { products: Product[]; wished: string[]; balance: number; priceWishes?: Record<string, Wish> }) {
+  const [pw, setPw] = useState<Record<string, Wish | null>>(priceWishes);
   const [open, setOpen] = useState<Product | null>(null);
   const [kind, setKind] = useState<string>("all");
   const [wish, setWish] = useState(new Set(wished));
@@ -40,6 +43,7 @@ export default function Shop({ products, wished, balance }: { products: Product[
       )}
       {open && (
         <ProductModal p={open} balance={balance} wished={wish.has(open.id)} onClose={() => setOpen(null)}
+          priceWish={pw[open.id] ?? null} onPriceWish={(w) => setPw((x) => ({ ...x, [open.id]: w }))}
           onWish={(on) => {
             const s = new Set(wish); if (on) s.add(open.id); else s.delete(open.id); setWish(s);
             toggleWishlist(open.id, on);
@@ -49,8 +53,9 @@ export default function Shop({ products, wished, balance }: { products: Product[
   );
 }
 
-function ProductModal({ p, balance, wished, onClose, onWish }: {
+function ProductModal({ p, balance, wished, onClose, onWish, priceWish, onPriceWish }: {
   p: Product; balance: number; wished: boolean; onClose: () => void; onWish: (on: boolean) => void;
+  priceWish: Wish | null; onPriceWish: (w: Wish | null) => void;
 }) {
   const [pending, start] = useTransition();
   const [err, setErr] = useState("");
@@ -88,6 +93,7 @@ function ProductModal({ p, balance, wished, onClose, onWish }: {
             </div>
             {err && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-600">{err}</p>}
             {!enough && <p className="mt-4 rounded-xl bg-gold/20 p-3 text-sm font-bold">Bu ürün için {(p.credit_price - balance).toLocaleString("tr-TR")} kredi daha lazım.</p>}
+            {p.credit_price > 1 && <PriceWish key={p.id} productId={p.id} listPrice={p.credit_price} initial={priceWish} onSaved={onPriceWish} />}
             <div className="mt-5 flex gap-3">
               <button className="game-btn ghost" onClick={() => onWish(!wished)} title="İstek listesi">{wished ? "💖" : "🤍"}</button>
               <button className="game-btn mint flex-1" disabled={pending || !enough} onClick={() => start(async () => {

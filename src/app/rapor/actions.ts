@@ -3,19 +3,20 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
 export type Filters = Record<string, string | number | undefined>;
-export type Row = { label: string; users: number; events?: number };
+export type ReportKind = "overview" | "price" | "funnel" | "brand" | "persona" | "variants" | "time" | "interest" | "profile";
 
+const RPC: Record<ReportKind, string> = {
+  overview: "report_overview", price: "report_price", funnel: "report_funnel", brand: "report_brand", persona: "report_persona",
+  variants: "report_variants", time: "report_time", interest: "report_interest", profile: "report_profile",
+};
 const clean = (f: Filters) => Object.fromEntries(Object.entries(f).filter(([, v]) => v !== "" && v !== undefined && v !== null));
 
-export async function runReport(kind: "interest" | "profile", f: Filters): Promise<{ rows?: Row[]; size?: number | null; error?: string }> {
+export async function runReport(kind: ReportKind, f: Filters): Promise<{ data?: unknown; error?: string; account?: unknown }> {
   const supabase = await createClient();
-  const filters = clean(f);
-  const [{ data, error }, { data: size }] = await Promise.all([
-    supabase.rpc(kind === "interest" ? "report_interest" : "report_profile", { f: filters }),
-    supabase.rpc("report_segment_size", { f: filters }),
-  ]);
-  if (error) return { error: error.message };
-  return { rows: (data ?? []).map((r: Row) => ({ ...r, users: Number(r.users), events: r.events != null ? Number(r.events) : undefined })), size: size as number | null };
+  const { data, error } = await supabase.rpc(RPC[kind], { f: clean(f) });
+  const { data: account } = await supabase.rpc("my_report_account");
+  if (error) return { error: error.message, account };
+  return { data, account };
 }
 
 export type ApplyState = { error?: string; ok?: boolean };
@@ -30,7 +31,7 @@ export async function applyBuyerAction(_: ApplyState, form: FormData): Promise<A
   const { error } = await supabase.from("data_buyers").insert({
     id, company, tax_no: String(form.get("tax_no") || "") || null, contact_email: String(form.get("email") || "") || null,
     sector: String(form.get("sector") || "") || null, purpose: String(form.get("purpose") || "").slice(0, 1000) || null,
-    created_by: user.id, approved: false,
+    plan_id: String(form.get("plan") || "") || null, created_by: user.id, approved: false,
   });
   if (error) return { error: error.message };
   await supabase.from("data_buyer_members").insert({ buyer_id: id, user_id: user.id });

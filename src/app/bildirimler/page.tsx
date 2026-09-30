@@ -8,13 +8,14 @@ const TEXT: Record<string, (d: Record<string, unknown>) => string> = {
   message: (d) => `sana mesaj gönderdi: “${d.preview ?? ""}”`,
   gift: (d) => `sana ${Number(d.amount).toLocaleString("tr-TR")} kredi hediye etti 🎁${d.note ? ` — “${d.note}”` : ""}`,
   ticket: (d) => `Destek talebin yanıtlandı: “${d.subject ?? ""}”`,
+  price_drop: (d) => `🎉 “${d.name}” fiyatı ${Number(d.price).toLocaleString("tr-TR")} krediye indi — teklifin ${Number(d.wish).toLocaleString("tr-TR")} idi!`,
   mention: () => "bir gönderide senden bahsetti",
   post_like: () => "gönderini beğendi ❤️",
   comment: (d) => `gönderine yorum yaptı: “${d.preview ?? ""}”`,
   announcement: (d) => `📣 ${d.title ?? "Duyuru"} — ${d.body ?? ""}`,
   admin_credit: (d) => `Dream Shop ekibi hesabına ${Number(d.amount) > 0 ? "+" : ""}${Number(d.amount).toLocaleString("tr-TR")} kredi işledi${d.note ? ` — “${d.note}”` : ""}`,
 };
-const ICON: Record<string, string> = { follow: "👤", home_like: "❤️", message: "💬", gift: "🎁", ticket: "🛟", announcement: "📣", admin_credit: "💎", mention: "📣", post_like: "❤️", comment: "💬" };
+const ICON: Record<string, string> = { follow: "👤", home_like: "❤️", message: "💬", gift: "🎁", ticket: "🛟", announcement: "📣", admin_credit: "💎", price_drop: "💰", mention: "📣", post_like: "❤️", comment: "💬" };
 
 export default async function BildirimlerPage() {
   const { supabase, me } = await requireMe("/bildirimler");
@@ -30,6 +31,7 @@ export default async function BildirimlerPage() {
     const u = n.actor_id ? uname.get(n.actor_id) : null;
     const pid = (n.data as { post_id?: number })?.post_id;
     if (pid && ["mention", "post_like", "comment"].includes(n.type)) return `/p/${pid}`;
+    if (n.type === "price_drop") return "/profil?tab=teklifler";
     return n.type === "message" && u ? `/mesajlar?k=${u}` : n.type === "gift" || n.type === "admin_credit" ? "/profil?tab=cuzdan" : n.type === "ticket" ? "/profil?tab=destek" : u ? `/u/${u}` : "#";
   };
 

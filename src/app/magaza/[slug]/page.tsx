@@ -27,10 +27,12 @@ export default async function MagazaPage({ params }: { params: Promise<{ slug: s
       : { href: `/sehir?il=${store.city_id}${store.place_type ? `&tur=${store.place_type}` : ""}`, label: city ?? "Şehir" };
     q = store.chain_id ? q.or(`store_id.eq.${store.id},chain_id.eq.${store.chain_id}`) : q.eq("store_id", store.id);
   }
-  const [{ data: products }, { data: wl }] = await Promise.all([
+  const [{ data: products }, { data: wl }, { data: pws }] = await Promise.all([
     q.order("created_at", { ascending: false }),
     supabase.from("wishlist").select("product_id").eq("user_id", me.id),
+    supabase.from("price_wishes").select("product_id, price, notify").eq("user_id", me.id),
   ]);
+  const priceWishes = Object.fromEntries((pws ?? []).map((w) => [w.product_id, { price: Number(w.price), notify: w.notify }]));
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fff1c7] to-cream">
@@ -39,7 +41,7 @@ export default async function MagazaPage({ params }: { params: Promise<{ slug: s
         <Link href={back.href} className="text-sm font-bold text-crystal">← {back.label}</Link>
         <h1 className="mt-1 font-display text-5xl font-bold">{title}</h1>
         <p className="mb-6 font-semibold text-ink/60">{subtitle}</p>
-        <Shop products={(products ?? []) as Product[]} wished={(wl ?? []).map((w) => w.product_id)} balance={me.balance} />
+        <Shop products={(products ?? []) as Product[]} wished={(wl ?? []).map((w) => w.product_id)} balance={me.balance} priceWishes={priceWishes} />
       </main>
     </div>
   );
